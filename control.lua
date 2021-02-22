@@ -1,5 +1,5 @@
 
-local shields, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
+local shields, shields_dirty, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
 
 -- joules per hitpoint
 local CONSUMPTION_PER_HITPOINT = 20000
@@ -27,6 +27,7 @@ script.on_init(function()
 	shield_generators_hash = global.shield_generators_hash
 
 	shield_generators_dirty = {}
+	shields_dirty = {}
 end)
 
 script.on_load(function()
@@ -43,11 +44,19 @@ script.on_load(function()
 	shield_generators_hash = global.shield_generators_hash
 
 	shield_generators_dirty = {}
+	shields_dirty = {}
 
 	-- build dirty list from savegame
 	for i = 1, #shield_generators do
 		if shield_generators[i].tracked_dirty then
 			table.insert(shield_generators_dirty, shield_generators[i])
+		end
+	end
+
+	for unumber, data in pairs(shields) do
+		if data.shield.energy < 8000000 then
+			data.dirty = true
+			table_insert(shields_dirty, data)
 		end
 	end
 end)
@@ -180,6 +189,27 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 		end
 	end
+
+	for i = #shields_dirty, 1, -1 do
+		local tracked_data = shields_dirty[i]
+
+		if tracked_data.shield.energy >= 8000000 then
+			rendering.set_visible(tracked_data.shield_bar, false)
+			rendering.set_visible(tracked_data.shield_bar_bg, false)
+
+			tracked_data.dirty = false
+			table.remove(shields_dirty, i)
+		else
+			rendering.set_visible(tracked_data.shield_bar, true)
+			rendering.set_visible(tracked_data.shield_bar_bg, true)
+
+			rendering.set_right_bottom(tracked_data.shield_bar,
+				tracked_data.unit, {
+					-tracked_data.width + 2 * tracked_data.width * tracked_data.shield.energy / 8000000,
+					tracked_data.height
+				})
+		end
+	end
 end)
 
 script.on_event(defines.events.on_entity_damaged, function(event)
@@ -209,6 +239,11 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			shield.health = health - final_damage_amount + energy / CONSUMPTION_PER_HITPOINT
 			entity.health = shield.health
 			shields[unit_number].shield.energy = 0
+		end
+
+		if not shield.dirty then
+			shield.dirty = true
+			table_insert(shields_dirty, shield)
 		end
 	elseif shield_generators_bound[unit_number] then -- bound shield generator provider
 		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[unit_number]]]
@@ -250,15 +285,7 @@ end)
 local BACKGROUND_COLOR = {40 / 255, 40 / 255, 40 / 255}
 local SHIELD_COLOR = {243 / 255, 236 / 255, 53 / 255}
 
-local function bindShield(entity, shield_provider)
-	local unit_number = entity.unit_number
-
-	if shield_provider.tracked_hash[unit_number] then return false end
-	if shield_generators_bound[unit_number] then return false end
-	local max_health = entity.prototype.max_health
-
-	if not max_health or max_health <= 0 then return false end
-
+local function makeShieldBars(entity)
 	local width, height
 
 	if entity.prototype.selection_box then
@@ -281,6 +308,38 @@ local function bindShield(entity, shield_provider)
 	height = height + 0.4
 	width = width / 2
 
+	return width, height, rendering.draw_rectangle({
+		color = BACKGROUND_COLOR,
+		forces = {entity.force},
+		filled = true,
+		surface = entity.surface,
+		left_top = entity,
+		left_top_offset = {-width, height - 0.15},
+		right_bottom = entity,
+		right_bottom_offset = {width, height},
+	}), rendering.draw_rectangle({
+		color = SHIELD_COLOR,
+		forces = {entity.force},
+		filled = true,
+		surface = entity.surface,
+		left_top = entity,
+		left_top_offset = {-width, height - 0.15},
+		right_bottom = entity,
+		right_bottom_offset = {-width, height},
+	})
+end
+
+local function bindShield(entity, shield_provider)
+	local unit_number = entity.unit_number
+
+	if shield_provider.tracked_hash[unit_number] then return false end
+	if shield_generators_bound[unit_number] then return false end
+	local max_health = entity.prototype.max_health
+
+	if not max_health or max_health <= 0 then return false end
+
+	local width, height, shield_bar_bg, shield_bar = makeShieldBars(entity)
+
 	-- create tracked data for shield state
 	local tracked_data = {
 		health = entity.health,
@@ -292,27 +351,8 @@ local function bindShield(entity, shield_provider)
 		width = width,
 		height = height,
 
-		shield_bar_bg = rendering.draw_rectangle({
-			color = BACKGROUND_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height - 0.15},
-			right_bottom = entity,
-			right_bottom_offset = {width, height},
-		}),
-
-		shield_bar = rendering.draw_rectangle({
-			color = SHIELD_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height - 0.15},
-			right_bottom = entity,
-			right_bottom_offset = {-width, height},
-		})
+		shield_bar_bg = shield_bar_bg,
+		shield_bar = shield_bar
 	}
 
 	-- tell globally that this entity has it's shield provider
@@ -457,16 +497,29 @@ local function on_build(created_entity)
 	elseif allowed_types_self[created_entity.type] then
 		destroy_remap[script.register_on_entity_destroyed(created_entity)] = created_entity.unit_number
 
-		shields[created_entity.unit_number] = {
+		local width, height, shield_bar_bg, shield_bar = makeShieldBars(created_entity)
+
+		local tracked_data = {
 			shield = created_entity.surface.create_entity({
 				name = 'shield-generators-interface',
 				position = created_entity.position,
 				force = created_entity.force,
 			}),
 
+			width = width,
+			height = height,
+			shield_bar_bg = shield_bar_bg,
+			shield_bar = shield_bar,
+
 			health = created_entity.health,
 			unit = created_entity,
+			id = created_entity.unit_number,
+
+			dirty = true
 		}
+
+		shields[created_entity.unit_number] = tracked_data
+		table_insert(shields_dirty, tracked_data)
 	end
 end
 
@@ -485,8 +538,27 @@ end)
 local function on_destroy(index)
 	-- entity with internal shield destroyed
 	if shields[index] then
-		if shields[index].shield and shields[index].shield.destroy then
-			shields[index].shield.destroy()
+		local tracked_data = shields[index]
+
+		if tracked_data.shield and tracked_data.shield.destroy then
+			tracked_data.shield.destroy()
+		end
+
+		if tracked_data.shield_bar_bg then
+			rendering.destroy(tracked_data.shield_bar_bg)
+		end
+
+		if tracked_data.shield_bar then
+			rendering.destroy(tracked_data.shield_bar)
+		end
+
+		if tracked_data.dirty then
+			for i = 1, #shields_dirty do
+				if shields_dirty[i] == tracked_data then
+					table.remove(shields_dirty, i)
+					break
+				end
+			end
 		end
 
 		shields[index] = nil
