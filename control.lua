@@ -63,6 +63,22 @@ script.on_event(defines.events.on_tick, function(event)
 						tracked_data.shield_health = tracked_data.shield_health + delta
 						energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
+						if tracked_data.shield_bar then
+							rendering.set_right_bottom(tracked_data.shield_bar,
+								tracked_data.unit, {
+									-tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health,
+									tracked_data.height
+								})
+
+							if tracked_data.shield_health >= tracked_data.max_health then
+								rendering.set_visible(tracked_data.shield_bar, false)
+								rendering.set_visible(tracked_data.shield_bar_bg, false)
+							else
+								rendering.set_visible(tracked_data.shield_bar, true)
+								rendering.set_visible(tracked_data.shield_bar_bg, true)
+							end
+						end
+
 						if energy <= 0 then break end
 					end
 				end
@@ -113,6 +129,9 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 	end
 end)
 
+local BACKGROUND_COLOR = {40 / 255, 40 / 255, 40 / 255}
+local SHIELD_COLOR = {243 / 255, 236 / 255, 53 / 255}
+
 local function bindShield(entity, shield_provider)
 	local unit_number = entity.unit_number
 
@@ -122,6 +141,23 @@ local function bindShield(entity, shield_provider)
 
 	if not max_health or max_health <= 0 then return false end
 
+	local width, height
+
+	if entity.prototype.selection_box then
+		width = math.abs(entity.prototype.selection_box.left_top.x - entity.prototype.selection_box.right_bottom.x)
+		height = math.abs(entity.prototype.selection_box.right_bottom.y)
+	else
+		width = 1
+		height = 0
+	end
+
+	if width < 1 then
+		width = 1
+	end
+
+	height = height + 0.4
+	width = width / 2
+
 	-- create tracked data for shield state
 	local tracked_data = {
 		health = entity.health,
@@ -129,6 +165,31 @@ local function bindShield(entity, shield_provider)
 		unit = entity,
 		shield_health = 0, -- how much hitpoints this shield has
 		-- upper bound by max_health
+
+		width = width,
+		height = height,
+
+		shield_bar_bg = rendering.draw_rectangle({
+			color = BACKGROUND_COLOR,
+			forces = {entity.force},
+			filled = true,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height - 0.15},
+			right_bottom = entity,
+			right_bottom_offset = {width, height},
+		}),
+
+		shield_bar = rendering.draw_rectangle({
+			color = SHIELD_COLOR,
+			forces = {entity.force},
+			filled = true,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height - 0.15},
+			right_bottom = entity,
+			right_bottom_offset = {width, height},
+		})
 	}
 
 	-- tell globally that this entity has it's shield provider
@@ -293,6 +354,14 @@ local function on_destroy(index)
 		for i, tracked_data in ipairs(data.tracked) do
 			-- unbind shield generator from this unit
 			shield_generators_bound[tracked_data.unit.unit_number] = nil
+
+			if tracked_data.shield_bar_bg then
+				rendering.destroy(tracked_data.shield_bar_bg)
+			end
+
+			if tracked_data.shield_bar then
+				rendering.destroy(tracked_data.shield_bar)
+			end
 		end
 
 		-- destroy tracked data in sequential table
@@ -320,6 +389,16 @@ local function on_destroy(index)
 		if shield_generator then
 			-- we got our shield generator data
 			-- let's remove us from tracked entities
+
+			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
+
+			if tracked_data.shield_bar_bg then
+				rendering.destroy(tracked_data.shield_bar_bg)
+			end
+
+			if tracked_data.shield_bar then
+				rendering.destroy(tracked_data.shield_bar)
+			end
 
 			table.remove(shield_generator.tracked, shield_generator.tracked_hash[index])
 			local above = shield_generator.tracked_hash[index]
