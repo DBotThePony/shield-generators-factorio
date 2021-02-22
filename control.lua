@@ -397,6 +397,7 @@ script.on_event(defines.events.on_built_entity, function(event)
 			bindShield(ent, data)
 		end
 
+		bindShield(created_entity, data)
 		markShieldDirty(data)
 
 		return
