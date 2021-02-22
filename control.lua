@@ -124,6 +124,11 @@ script.on_event(defines.events.on_tick, function(event)
 					if tracked_data.shield_health < tracked_data.max_health then
 						run_dirty = true
 
+						if tracked_data.health ~= tracked_data.max_health then
+							-- update hacky health counter if required
+							tracked_data.health = tracked_data.unit.health
+						end
+
 						local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick, tracked_data.max_health - tracked_data.shield_health)
 						tracked_data.shield_health = tracked_data.shield_health + delta
 						energy = energy - delta * CONSUMPTION_PER_HITPOINT
@@ -205,7 +210,15 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		local shield_health = tracked_data.shield_health
 
 		if shield_health >= final_damage_amount then
-			entity.health = tracked_data.health
+			-- HACK HACK HACK
+			-- we have no idea how to determine old health in this case
+			if final_health == 0 then
+				entity.health = tracked_data.health
+			else
+				entity.health = entity.health + final_damage_amount
+				tracked_data.health = entity.health
+			end
+
 			tracked_data.shield_health = shield_health - final_damage_amount
 		else
 			tracked_data.health = health - final_damage_amount + tracked_data.shield_health
