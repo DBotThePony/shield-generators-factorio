@@ -378,9 +378,7 @@ for i, _type in ipairs(_allowed_types) do
 	allowed_types[_type] = true
 end
 
-script.on_event(defines.events.on_built_entity, function(event)
-	local created_entity, player_index, stack, item, tags = event.created_entity, event.player_index, event.stack, event.item, event.tags
-
+local function on_build(created_entity)
 	if shields[created_entity.unit_number] then return end -- wut
 	if created_entity.name == 'shield-generators-interface' then return end
 
@@ -444,6 +442,14 @@ script.on_event(defines.events.on_built_entity, function(event)
 
 		health = created_entity.health,
 	}
+end
+
+script.on_event(defines.events.on_built_entity, function(event)
+	on_build(event.created_entity)
+end)
+
+script.on_event(defines.events.script_raised_built, function(event)
+	on_build(event.entity)
 end)
 
 local function on_destroy(index)
