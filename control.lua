@@ -247,37 +247,46 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		end
 	elseif shield_generators_bound[unit_number] then -- bound shield generator provider
 		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[unit_number]]]
-		local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
 
-		local health = tracked_data.health
-		local shield_health = tracked_data.shield_health
+		if shield_generator then
+			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
 
-		if shield_health >= final_damage_amount then
-			-- HACK HACK HACK
-			-- we have no idea how to determine old health in this case
-			if final_health == 0 then
-				entity.health = tracked_data.health
+			if tracked_data then
+				local health = tracked_data.health
+				local shield_health = tracked_data.shield_health
+
+				if shield_health >= final_damage_amount then
+					-- HACK HACK HACK
+					-- we have no idea how to determine old health in this case
+					if final_health == 0 then
+						entity.health = tracked_data.health
+					else
+						entity.health = entity.health + final_damage_amount
+						tracked_data.health = entity.health
+					end
+
+					tracked_data.shield_health = shield_health - final_damage_amount
+				else
+					tracked_data.health = health - final_damage_amount + tracked_data.shield_health
+					entity.health = tracked_data.health
+					tracked_data.shield_health = 0
+				end
+
+				-- not dirty? mark shield generator as dirty
+				if not shield_generator.tracked_dirty then
+					markShieldDirty(shield_generator)
+
+				-- shield is dirty but we are not?
+				-- mark us as dirty
+				elseif not tracked_data.dirty then
+					tracked_data.dirty = true
+					table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
+				end
 			else
-				entity.health = entity.health + final_damage_amount
-				tracked_data.health = entity.health
+				debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
 			end
-
-			tracked_data.shield_health = shield_health - final_damage_amount
 		else
-			tracked_data.health = health - final_damage_amount + tracked_data.shield_health
-			entity.health = tracked_data.health
-			tracked_data.shield_health = 0
-		end
-
-		-- not dirty? mark shield generator as dirty
-		if not shield_generator.tracked_dirty then
-			markShieldDirty(shield_generator)
-
-		-- shield is dirty but we are not?
-		-- mark us as dirty
-		elseif not tracked_data.dirty then
-			tracked_data.dirty = true
-			table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
+			debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generators_bound[unit_number] .. ', but this generator is invalid!')
 		end
 	end
 end)
@@ -568,7 +577,9 @@ local function on_destroy(index)
 		-- unbind shield generator from all of it's units
 		for i, tracked_data in ipairs(data.tracked) do
 			-- unbind shield generator from this unit
-			shield_generators_bound[tracked_data.unit.unit_number] = nil
+			if tracked_data.unit.valid then
+				shield_generators_bound[tracked_data.unit.unit_number] = nil
+			end
 
 			if tracked_data.shield_bar_bg then
 				rendering.destroy(tracked_data.shield_bar_bg)
