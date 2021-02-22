@@ -640,6 +640,8 @@ local function on_destroy(index)
 				end
 			end
 		end
+
+		shield_generators_bound[index] = nil
 	end
 end
 
