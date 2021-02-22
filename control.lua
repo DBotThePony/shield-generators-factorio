@@ -111,13 +111,20 @@ script.on_event(defines.events.on_tick, function(event)
 				-- remember, whenever there was any dirty shields
 				local run_dirty = false
 
-				for i2 = #data.tracked_dirty, 1, -1 do
+				local count = #data.tracked_dirty
+				local health_per_tick = HITPOINTS_PER_TICK
+
+				if count * health_per_tick * CONSUMPTION_PER_HITPOINT > energy then
+					health_per_tick = energy / (CONSUMPTION_PER_HITPOINT * count)
+				end
+
+				for i2 = count, 1, -1 do
 					local tracked_data = data.tracked[data.tracked_dirty[i2]]
 
 					if tracked_data.shield_health < tracked_data.max_health then
 						run_dirty = true
 
-						local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, HITPOINTS_PER_TICK, tracked_data.max_health - tracked_data.shield_health)
+						local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick, tracked_data.max_health - tracked_data.shield_health)
 						tracked_data.shield_health = tracked_data.shield_health + delta
 						energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
