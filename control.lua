@@ -452,6 +452,10 @@ script.on_event(defines.events.script_raised_built, function(event)
 	on_build(event.entity)
 end)
 
+script.on_event(defines.events.on_robot_built_entity, function(event)
+	on_build(event.created_entity)
+end)
+
 local function on_destroy(index)
 	-- entity with internal shield destroyed
 	if shields[index] then
