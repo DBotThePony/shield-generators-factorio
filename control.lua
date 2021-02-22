@@ -189,13 +189,21 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 	local shield = shields[unit_number]
 
 	-- internal shield
-	if shield and shield.shield then
+	if shield then
 		local energy = shield.shield.energy
 		local consumption = CONSUMPTION_PER_HITPOINT * final_damage_amount
 		local health = shield.health or entity.health
 
-		if energy - consumption > 0 then
-			entity.health = health
+		if energy >= consumption then
+			-- HACK HACK HACK
+			-- we have no idea how to determine old health in this case
+			if final_health == 0 then
+				entity.health = shield.health
+			else
+				entity.health = entity.health + final_damage_amount
+				shield.health = entity.health
+			end
+
 			shields[unit_number].shield.energy = energy - consumption
 		else
 			shield.health = health - final_damage_amount + energy / CONSUMPTION_PER_HITPOINT
@@ -323,6 +331,13 @@ end
 -- lookup hash table
 local allowed_types = {}
 
+local allowed_types_self = {
+	['turret'] = true,
+	['ammo-turret'] = true,
+	['electric-turret'] = true,
+	['fluid-turret'] = true,
+}
+
 -- array to pass to find_entities_filtered and to build hash above
 local _allowed_types = {
 	'boiler',
@@ -370,10 +385,11 @@ local _allowed_types = {
 	'underground-belt',
 
 	-- turrets, maybe give them their own shields
-	'turret',
-	'ammo-turret',
-	'electric-turret',
-	'fluid-turret',
+	-- 'turret',
+	-- 'ammo-turret',
+	-- 'electric-turret',
+	-- 'fluid-turret',
+
 	'wall',
 
 	-- logic entities
@@ -424,37 +440,34 @@ local function on_build(created_entity)
 		markShieldDirty(data)
 
 		return
-	end
-
-	if not allowed_types[created_entity.type] then return end
-
-	-- find shield generators
-	local found = created_entity.surface.find_entities_filtered({
-		position = created_entity.position,
-		radius = 32,
-		force = created_entity.force,
-		name = 'shield-generators-generator'
-	})
-
-	if found[1] and shield_generators_hash[found[1].unit_number] then
-		local shield_generator = shield_generators[shield_generators_hash[found[1].unit_number]]
-		bindShield(created_entity, shield_generator)
-		markShieldDirty(shield_generator)
-	end
-
-	if true then return end
-
-	destroy_remap[script.register_on_entity_destroyed(created_entity)] = created_entity.unit_number
-
-	shields[created_entity.unit_number] = {
-		shield = created_entity.surface.create_entity({
-			name = 'shield-generators-interface',
+	elseif allowed_types[created_entity.type] then
+		-- find shield generators
+		local found = created_entity.surface.find_entities_filtered({
 			position = created_entity.position,
+			radius = 32,
 			force = created_entity.force,
-		}),
+			name = 'shield-generators-generator'
+		})
 
-		health = created_entity.health,
-	}
+		if found[1] and shield_generators_hash[found[1].unit_number] then
+			local shield_generator = shield_generators[shield_generators_hash[found[1].unit_number]]
+			bindShield(created_entity, shield_generator)
+			markShieldDirty(shield_generator)
+		end
+	elseif allowed_types_self[created_entity.type] then
+		destroy_remap[script.register_on_entity_destroyed(created_entity)] = created_entity.unit_number
+
+		shields[created_entity.unit_number] = {
+			shield = created_entity.surface.create_entity({
+				name = 'shield-generators-interface',
+				position = created_entity.position,
+				force = created_entity.force,
+			}),
+
+			health = created_entity.health,
+			unit = created_entity,
+		}
+	end
 end
 
 script.on_event(defines.events.on_built_entity, function(event)
