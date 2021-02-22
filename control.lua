@@ -1,5 +1,5 @@
 
-local shields, shield_generators, shield_generators_hash, shield_generators_bound, destroy_remap
+local shields, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
 
 -- joules per hitpoint
 local CONSUMPTION_PER_HITPOINT = 20000
@@ -25,6 +25,8 @@ script.on_init(function()
 	shield_generators_bound = global.shield_generators_bound
 	shield_generators = global.shield_generators
 	shield_generators_hash = global.shield_generators_hash
+
+	shield_generators_dirty = {}
 end)
 
 script.on_load(function()
@@ -39,6 +41,15 @@ script.on_load(function()
 	shield_generators_bound = global.shield_generators_bound
 	shield_generators = global.shield_generators
 	shield_generators_hash = global.shield_generators_hash
+
+	shield_generators_dirty = {}
+
+	-- build dirty list from savegame
+	for i = 1, #shield_generators do
+		if shield_generators[i].tracked_dirty then
+			table.insert(shield_generators_dirty, shield_generators[i])
+		end
+	end
 end)
 
 local function debug(str)
@@ -47,18 +58,65 @@ local function debug(str)
 	end
 end
 
+local function markShieldDirty(shield_generator)
+	shield_generator.tracked_dirty = nil
+
+	-- build dirty list
+	for i, tracked_data in ipairs(shield_generator.tracked) do
+		if tracked_data.shield_health < tracked_data.max_health then
+			if not shield_generator.tracked_dirty then
+				shield_generator.tracked_dirty = {}
+			end
+
+			tracked_data.dirty = true
+			table_insert(shield_generator.tracked_dirty, i)
+		end
+	end
+
+	-- if we are dirty, let's tick
+	if shield_generator.tracked_dirty then
+		local hit = false
+
+		for i, data in ipairs(shield_generators_dirty) do
+			if data == shield_generator then
+				hit = true
+				break
+			end
+		end
+
+		if not hit then
+			table_insert(shield_generators_dirty, shield_generator)
+		end
+	else
+		for i, data in ipairs(shield_generators_dirty) do
+			if data == shield_generator then
+				table.remove(shield_generators_dirty, i)
+				break
+			end
+		end
+	end
+end
+
 script.on_event(defines.events.on_tick, function(event)
-	for i = 1, #shield_generators do
-		local data = shield_generators[i]
+	local check = false
+
+	-- iterate dirty shield providers
+	for i = 1, #shield_generators_dirty do
+		local data = shield_generators_dirty[i]
 
 		if data.unit.valid then
 			local energy = data.unit.energy
 
 			if energy > 0 then
-				for i2 = 1, #data.tracked do
-					local tracked_data = data.tracked[i2]
+				-- remember, whenever there was any dirty shields
+				local run_dirty = false
+
+				for i2 = #data.tracked_dirty, 1, -1 do
+					local tracked_data = data.tracked[data.tracked_dirty[i2]]
 
 					if tracked_data.shield_health < tracked_data.max_health then
+						run_dirty = true
+
 						local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, HITPOINTS_PER_TICK, tracked_data.max_health - tracked_data.shield_health)
 						tracked_data.shield_health = tracked_data.shield_health + delta
 						energy = energy - delta * CONSUMPTION_PER_HITPOINT
@@ -80,13 +138,34 @@ script.on_event(defines.events.on_tick, function(event)
 						end
 
 						if energy <= 0 then break end
+					else
+						table.remove(data.tracked_dirty, i2)
+						tracked_data.dirty = false
 					end
+				end
+
+				-- not a single dirty entity - consider this shield provider is clean
+				if not run_dirty then
+					data.tracked_dirty = nil
+					check = true
 				end
 			end
 
 			data.unit.energy = energy
 		else
-			debug('Shield is still invalid but iterated ' .. data.id .. ' ' .. i)
+			check = true
+		end
+	end
+
+	-- if we encountered clean or invalid shield providers,
+	-- remove them from ticking
+	if check then
+		for i = #shield_generators_dirty, 1, -1 do
+			local data = shield_generators_dirty[i]
+
+			if not data.unit.valid or not data.tracked_dirty then
+				table.remove(shield_generators_dirty, i)
+			end
 		end
 	end
 end)
@@ -125,6 +204,17 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			tracked_data.health = health - final_damage_amount + tracked_data.shield_health
 			entity.health = tracked_data.health
 			tracked_data.shield_health = 0
+		end
+
+		-- not dirty? mark shield generator as dirty
+		if not shield_generator.tracked_dirty then
+			markShieldDirty(shield_generator)
+
+		-- shield is dirty but we are not?
+		-- mark us as dirty
+		elseif not tracked_data.dirty then
+			tracked_data.dirty = true
+			table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
 		end
 	end
 end)
@@ -188,7 +278,7 @@ local function bindShield(entity, shield_provider)
 			left_top = entity,
 			left_top_offset = {-width, height - 0.15},
 			right_bottom = entity,
-			right_bottom_offset = {width, height},
+			right_bottom_offset = {-width, height},
 		})
 	}
 
@@ -307,6 +397,8 @@ script.on_event(defines.events.on_built_entity, function(event)
 			bindShield(ent, data)
 		end
 
+		markShieldDirty(data)
+
 		return
 	end
 
@@ -321,7 +413,9 @@ script.on_event(defines.events.on_built_entity, function(event)
 	})
 
 	if found[1] and shield_generators_hash[found[1].unit_number] then
-		bindShield(created_entity, shield_generators[shield_generators_hash[found[1].unit_number]])
+		local shield_generator = shield_generators[shield_generators_hash[found[1].unit_number]]
+		bindShield(created_entity, shield_generator)
+		markShieldDirty(shield_generator)
 	end
 
 	if true then return end
@@ -403,6 +497,9 @@ local function on_destroy(index)
 			table.remove(shield_generator.tracked, shield_generator.tracked_hash[index])
 			local above = shield_generator.tracked_hash[index]
 			shield_generator.tracked_hash[index] = nil
+
+			-- force dirty list to be rebuilt
+			markShieldDirty(shield_generator)
 
 			-- update hash table to reflect change to indexes
 			for unit_number, index in pairs(shield_generator.tracked_hash) do
