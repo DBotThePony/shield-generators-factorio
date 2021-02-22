@@ -241,8 +241,13 @@ local function bindShield(entity, shield_provider)
 	local width, height
 
 	if entity.prototype.selection_box then
-		width = math.abs(entity.prototype.selection_box.left_top.x - entity.prototype.selection_box.right_bottom.x)
-		height = math.abs(entity.prototype.selection_box.right_bottom.y)
+		if entity.direction == defines.direction.east or entity.direction == defines.direction.west then
+			width = math.abs(entity.prototype.selection_box.left_top.y - entity.prototype.selection_box.right_bottom.y)
+			height = math.abs(entity.prototype.selection_box.right_bottom.x)
+		else
+			width = math.abs(entity.prototype.selection_box.left_top.x - entity.prototype.selection_box.right_bottom.x)
+			height = math.abs(entity.prototype.selection_box.right_bottom.y)
+		end
 	else
 		width = 1
 		height = 0
