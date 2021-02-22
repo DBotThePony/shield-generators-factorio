@@ -2,7 +2,7 @@
 local shields, shield_generators, shield_generators_hash, shield_generators_bound, destroy_remap
 
 -- joules per hitpoint
-local CONSUMPTION_PER_HITPOINT = 2000
+local CONSUMPTION_PER_HITPOINT = 20000
 local HITPOINTS_PER_TICK = 1
 
 -- wwwwwwwwwtf??? with Lua of Wube
