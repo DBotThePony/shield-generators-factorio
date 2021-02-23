@@ -405,6 +405,7 @@ local function determineDimensions(entity)
 end
 
 local function bind_shield(entity, shield_provider)
+	if not entity.destructible then return false end
 	local unit_number = entity.unit_number
 
 	if shield_provider.tracked_hash[unit_number] then return false end
