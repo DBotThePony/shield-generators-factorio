@@ -69,9 +69,8 @@ script.on_load(function()
 end)
 
 local function debug(str)
-	for index, player in pairs(game.players) do
-		player.print(str)
-	end
+	game.print('[Shield Generators] ' .. str)
+	log(str)
 end
 
 local function mark_shield_dirty(shield_generator)
@@ -197,6 +196,7 @@ script.on_event(defines.events.on_tick, function(event)
 
 			data.unit.energy = energy
 		else
+			-- debug('Encountered invalid shield provider with index ' .. data.id)
 			check = true
 		end
 	end
@@ -594,6 +594,10 @@ local function on_built_shield_provider(entity)
 	mark_shield_dirty(data)
 end
 
+local function distance(a, b)
+	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)
+end
+
 local function on_built_shieldable_entity(entity)
 	-- find shield generators
 	local found = entity.surface.find_entities_filtered({
@@ -603,12 +607,34 @@ local function on_built_shieldable_entity(entity)
 		name = 'shield-generators-generator'
 	})
 
-	if found[1] and shield_generators_hash[found[1].unit_number] then
-		local shield_generator = shield_generators[shield_generators_hash[found[1].unit_number]]
+	local provider = found[1]
+	if not provider then return end
 
-		if bind_shield(entity, shield_generator) then
-			mark_shield_dirty(shield_generator)
+	local provider_data = shield_generators[shield_generators_hash[provider.unit_number]]
+	if not provider_data then
+		debug('Encountered shield provider entity ' .. provider.unit_number .. ' with no shield data!')
+		return
+	end
+
+	local pos = entity.position
+
+	for i = 2, #found do
+		local _provider = found[i]
+		local _provider_data = shield_generators[shield_generators_hash[_provider.unit_number]]
+
+		if not _provider_data then
+			debug('Encountered shield provider entity ' .. _provider.unit_number .. ' with no shield data!')
+			return
 		end
+
+		-- determine least loaded, or closest if load is equal
+		if #_provider_data.tracked < #provider_data.tracked or #_provider_data.tracked == #provider_data.tracked and distance(_provider.position, pos) < distance(provider.position, pos) then
+			provider, provider_data = _provider, _provider_data
+		end
+	end
+
+	if bind_shield(entity, provider_data) then
+		mark_shield_dirty(provider_data)
 	end
 end
 
