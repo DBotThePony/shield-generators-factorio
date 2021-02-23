@@ -86,6 +86,9 @@ local function mark_shield_dirty(shield_generator)
 
 			tracked_data.dirty = true
 			table_insert(shield_generator.tracked_dirty, i)
+
+			rendering.set_visible(tracked_data.shield_bar, true)
+			rendering.set_visible(tracked_data.shield_bar_bg, true)
 		end
 	end
 
@@ -166,9 +169,6 @@ script.on_event(defines.events.on_tick, function(event)
 								if tracked_data.shield_health >= tracked_data.max_health then
 									rendering.set_visible(tracked_data.shield_bar, false)
 									rendering.set_visible(tracked_data.shield_bar_bg, false)
-								else
-									rendering.set_visible(tracked_data.shield_bar, true)
-									rendering.set_visible(tracked_data.shield_bar_bg, true)
 								end
 							end
 
@@ -314,6 +314,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				elseif not tracked_data.dirty then
 					tracked_data.dirty = true
 					table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
+					rendering.set_visible(tracked_data.shield_bar, true)
+					rendering.set_visible(tracked_data.shield_bar_bg, true)
 				end
 			else
 				debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
