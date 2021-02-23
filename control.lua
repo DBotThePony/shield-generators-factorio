@@ -1,16 +1,13 @@
 
 local shields, shields_dirty, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
-
 local on_destroyed
 
--- joules per hitpoint
-local CONSUMPTION_PER_HITPOINT = 20000
-local HITPOINTS_PER_TICK = 1
-local BAR_HEIGHT = 0.15
+local values = require('__shield-generators__/values')
 
-local BACKGROUND_COLOR = {40 / 255, 40 / 255, 40 / 255}
-local SHIELD_COLOR = {243 / 255, 236 / 255, 53 / 255}
-local SHIELD_BUFF_COLOR = {92 / 255, 143 / 255, 247 / 255}
+-- joules per hitpoint
+local CONSUMPTION_PER_HITPOINT = settings.startup['shield-generators-joules-per-point'].value
+local HITPOINTS_PER_TICK = 1
+local BAR_HEIGHT = values.BAR_HEIGHT
 
 -- wwwwwwwwwtf??? with Lua of Wube
 -- why it doesn't return inserted index
@@ -18,6 +15,23 @@ local function table_insert(tab, value)
 	local insert = #tab + 1
 	tab[insert] = value
 	return insert
+end
+
+local RANGE_DEF = {}
+local SEARCH_RANGE
+
+local function reload_values()
+	RANGE_DEF['shield-generators-generator'] = settings.global['shield-generators-provider-range-basic'].value
+	RANGE_DEF['shield-generators-generator-advanced'] = settings.global['shield-generators-provider-range-advanced'].value
+	RANGE_DEF['shield-generators-generator-elite'] = settings.global['shield-generators-provider-range-elite'].value
+	RANGE_DEF['shield-generators-generator-ultimate'] = settings.global['shield-generators-provider-range-ultimate'].value
+
+	SEARCH_RANGE = math.max(
+		RANGE_DEF['shield-generators-generator'],
+		RANGE_DEF['shield-generators-generator-advanced'],
+		RANGE_DEF['shield-generators-generator-elite'],
+		RANGE_DEF['shield-generators-generator-ultimate']
+	)
 end
 
 script.on_init(function()
@@ -35,7 +49,11 @@ script.on_init(function()
 
 	shield_generators_dirty = {}
 	shields_dirty = {}
+
+	reload_values()
 end)
+
+script.on_configuration_changed(reload_values)
 
 script.on_load(function()
 	global.shields = global.shields or {}
@@ -66,6 +84,8 @@ script.on_load(function()
 			table_insert(shields_dirty, data)
 		end
 	end
+
+	reload_values()
 end)
 
 local function debug(str)
@@ -413,7 +433,7 @@ local function bind_shield(entity, shield_provider)
 		height = height,
 
 		shield_bar_bg = rendering.draw_rectangle({
-			color = BACKGROUND_COLOR,
+			color = values.BACKGROUND_COLOR,
 			forces = {entity.force},
 			filled = true,
 			surface = entity.surface,
@@ -424,7 +444,7 @@ local function bind_shield(entity, shield_provider)
 		}),
 
 		shield_bar = rendering.draw_rectangle({
-			color = SHIELD_COLOR,
+			color = values.SHIELD_COLOR,
 			forces = {entity.force},
 			filled = true,
 			surface = entity.surface,
@@ -565,7 +585,7 @@ local function on_built_shield_provider(entity)
 		height = height,
 
 		battery_bar_bg = rendering.draw_rectangle({
-			color = BACKGROUND_COLOR,
+			color = values.BACKGROUND_COLOR,
 			forces = {entity.force},
 			filled = true,
 			surface = entity.surface,
@@ -576,7 +596,7 @@ local function on_built_shield_provider(entity)
 		}),
 
 		battery_bar = rendering.draw_rectangle({
-			color = SHIELD_BUFF_COLOR,
+			color = values.SHIELD_BUFF_COLOR,
 			forces = {entity.force},
 			filled = true,
 			surface = entity.surface,
@@ -584,6 +604,17 @@ local function on_built_shield_provider(entity)
 			left_top_offset = {-width, height - BAR_HEIGHT},
 			right_bottom = entity,
 			right_bottom_offset = {-width, height},
+		}),
+
+		provider_radius = rendering.draw_circle({
+			color = values.SHIELD_RADIUS_COLOR,
+			forces = {entity.force},
+			filled = true,
+			surface = entity.surface,
+			target = entity,
+			radius = RANGE_DEF[entity.name],
+			draw_on_ground = true,
+			only_in_alt_mode = true,
 		}),
 
 		-- to be set to dynamic value later
@@ -596,7 +627,7 @@ local function on_built_shield_provider(entity)
 	-- find buildings around already placed
 	local found = entity.surface.find_entities_filtered({
 		position = entity.position,
-		radius = 32,
+		radius = RANGE_DEF[entity.name],
 		force = entity.force,
 		type = _allowed_types,
 	})
@@ -610,16 +641,24 @@ local function on_built_shield_provider(entity)
 end
 
 local function distance(a, b)
-	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)
+	return math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y))
 end
 
 local function find_closest_provider(force, position, surface)
-	local found = surface.find_entities_filtered({
+	local _found = surface.find_entities_filtered({
 		position = position,
-		radius = 32,
+		radius = SEARCH_RANGE,
 		force = force,
-		name = 'shield-generators-generator'
+		name = values.GENERATORS
 	})
+
+	local found = {}
+
+	for i, generator in ipairs(_found) do
+		if distance(generator.position, position) <= RANGE_DEF[generator.name] then
+			table_insert(found, generator)
+		end
+	end
 
 	local provider = found[1]
 	if not provider then return end
@@ -679,7 +718,7 @@ local function on_built_shieldable_self(entity)
 		height = height,
 
 		shield_bar_bg = rendering.draw_rectangle({
-			color = BACKGROUND_COLOR,
+			color = values.BACKGROUND_COLOR,
 			forces = {entity.force},
 			filled = true,
 			surface = entity.surface,
@@ -690,7 +729,7 @@ local function on_built_shieldable_self(entity)
 		}),
 
 		shield_bar = rendering.draw_rectangle({
-			color = SHIELD_COLOR,
+			color = values.SHIELD_COLOR,
 			forces = {entity.force},
 			filled = true,
 			surface = entity.surface,
@@ -701,7 +740,7 @@ local function on_built_shieldable_self(entity)
 		}),
 
 		shield_bar_buffer = rendering.draw_rectangle({
-			color = SHIELD_BUFF_COLOR,
+			color = values.SHIELD_BUFF_COLOR,
 			forces = {entity.force},
 			filled = true,
 			surface = entity.surface,
@@ -744,7 +783,7 @@ local function on_built_shieldable_self(entity)
 end
 
 local function on_built(created_entity)
-	if created_entity.name == 'shield-generators-generator' then
+	if RANGE_DEF[created_entity.name] then
 		on_built_shield_provider(created_entity)
 	else
 		if allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then

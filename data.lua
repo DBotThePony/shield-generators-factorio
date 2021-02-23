@@ -1,35 +1,35 @@
 
 local beacon = data.raw.beacon.beacon
 
-if data.raw.technology["energy-shield-equipment"] then
-	table.insert(data.raw.technology["energy-shield-equipment"].prerequisites, 'shield-generators-basics')
+if data.raw.technology['energy-shield-equipment'] then
+	table.insert(data.raw.technology['energy-shield-equipment'].prerequisites, 'shield-generators-basics')
 end
 
 data:extend({
 	-- technologies
 	-- basics of shields
 	{
-		type = "technology",
-		name = "shield-generators-basics",
+		type = 'technology',
+		name = 'shield-generators-basics',
 
 		icon_size = 64,
 		icon_mipmaps = 4,
-		-- icon = "__base__/graphics/technology/energy-shield-equipment.png",
+		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
 		icon = '__base__/graphics/icons/energy-shield-equipment.png',
 
 		effects = {
 
 		},
 
-		prerequisites = {"military-2", "logistic-science-pack", "military-science-pack"},
+		prerequisites = {'military-2', 'logistic-science-pack', 'military-science-pack'},
 
 		unit = {
 			count = 100,
 
 			ingredients = {
-				{"automation-science-pack", 1},
-				{"logistic-science-pack", 1},
-				{"military-science-pack", 1},
+				{'automation-science-pack', 1},
+				{'logistic-science-pack', 1},
+				{'military-science-pack', 1},
 			},
 
 			time = 15
@@ -38,27 +38,27 @@ data:extend({
 
 	-- turret internal shields
 	{
-		type = "technology",
-		name = "shield-generators-turret-shields-basics",
+		type = 'technology',
+		name = 'shield-generators-turret-shields-basics',
 
 		icon_size = 64,
 		icon_mipmaps = 4,
-		-- icon = "__base__/graphics/technology/energy-shield-equipment.png",
+		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
 		icon = '__base__/graphics/icons/energy-shield-equipment.png',
 
 		effects = {
 
 		},
 
-		prerequisites = {"shield-generators-basics", "gun-turret"},
+		prerequisites = {'shield-generators-basics', 'gun-turret'},
 
 		unit = {
 			count = 200,
 
 			ingredients = {
-				{"automation-science-pack", 1},
-				{"logistic-science-pack", 1},
-				{"military-science-pack", 1},
+				{'automation-science-pack', 1},
+				{'logistic-science-pack', 1},
+				{'military-science-pack', 1},
 			},
 
 			time = 30
@@ -67,37 +67,37 @@ data:extend({
 
 	-- basic shield provider
 	{
-		type = "technology",
-		name = "shield-generators-provider-shields-basics",
+		type = 'technology',
+		name = 'shield-generators-provider-shields-basics',
 
 		icon_size = 64,
 		icon_mipmaps = 4,
-		-- icon = "__base__/graphics/technology/energy-shield-equipment.png",
+		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
 		icon = '__base__/graphics/icons/energy-shield-equipment.png',
 
 		effects = {
 			{
-				type = "unlock-recipe",
-				recipe = "shield-generators-generator"
+				type = 'unlock-recipe',
+				recipe = 'shield-generators-generator'
 			}
 		},
 
 		prerequisites = {
-			"shield-generators-basics",
-			"chemical-science-pack",
-			"military-3",
-			"advanced-electronics-2",
-			"speed-module",
+			'shield-generators-basics',
+			'chemical-science-pack',
+			'military-3',
+			'advanced-electronics-2',
+			'speed-module',
 		},
 
 		unit = {
 			count = 300,
 
 			ingredients = {
-				{"automation-science-pack", 1},
-				{"logistic-science-pack", 1},
-				{"military-science-pack", 1},
-				{"chemical-science-pack", 1},
+				{'automation-science-pack', 1},
+				{'logistic-science-pack', 1},
+				{'military-science-pack', 1},
+				{'chemical-science-pack', 1},
 			},
 
 			time = 30
@@ -135,7 +135,7 @@ data:extend({
 		}
 	},
 
-	-- energy shield provider building
+	-- energy shield provider building (basic)
 	{
 		type = 'electric-energy-interface',
 		name = 'shield-generators-generator',
@@ -178,12 +178,12 @@ data:extend({
 		picture = {
 			layers = {
 				{
-					filename = "__base__/graphics/entity/beacon/beacon-bottom.png",
+					filename = '__base__/graphics/entity/beacon/beacon-bottom.png',
 					width = 106,
 					height = 96,
 					shift = util.by_pixel(0, 1),
 					hr_version = {
-						filename = "__base__/graphics/entity/beacon/hr-beacon-bottom.png",
+						filename = '__base__/graphics/entity/beacon/hr-beacon-bottom.png',
 						width = 212,
 						height = 192,
 						scale = 0.5,
@@ -192,13 +192,13 @@ data:extend({
 				},
 
 				{
-					filename = "__base__/graphics/entity/beacon/beacon-shadow.png",
+					filename = '__base__/graphics/entity/beacon/beacon-shadow.png',
 					width = 122,
 					height = 90,
 					draw_as_shadow = true,
 					shift = util.by_pixel(12, 1),
 					hr_version = {
-						filename = "__base__/graphics/entity/beacon/hr-beacon-shadow.png",
+						filename = '__base__/graphics/entity/beacon/hr-beacon-shadow.png',
 						width = 244,
 						height = 176,
 						scale = 0.5,
@@ -208,14 +208,14 @@ data:extend({
 				},
 
 				{
-					filename = "__base__/graphics/entity/beacon/beacon-top.png",
+					filename = '__base__/graphics/entity/beacon/beacon-top.png',
 					width = 48,
 					height = 70,
 					repeat_count = 45,
 					animation_speed = 0.5,
 					shift = util.by_pixel(3, -19),
 					hr_version = {
-						filename = "__base__/graphics/entity/beacon/hr-beacon-top.png",
+						filename = '__base__/graphics/entity/beacon/hr-beacon-top.png',
 						width = 96,
 						height = 140,
 						scale = 0.5,
@@ -230,31 +230,31 @@ data:extend({
 
 	-- energy shield building item
 	{
-		type = "item",
-		name = "shield-generators-generator",
-		icon = "__base__/graphics/icons/beacon.png",
+		type = 'item',
+		name = 'shield-generators-generator',
+		icon = '__base__/graphics/icons/beacon.png',
 		icon_size = 64,
 		icon_mipmaps = 4,
-		subgroup = "defensive-structure",
-    	order = "b[turret]-n[shield-generator]",
-		place_result = "shield-generators-generator",
+		subgroup = 'defensive-structure',
+    	order = 'b[turret]-n[shield-generator]',
+		place_result = 'shield-generators-generator',
 		stack_size = 10
 	},
 
 	-- energy shield building recipe
 	{
-		type = "recipe",
-		name = "shield-generators-generator",
+		type = 'recipe',
+		name = 'shield-generators-generator',
 		enabled = false,
-		result = "shield-generators-generator",
+		result = 'shield-generators-generator',
 
 		energy_required = 2,
 
 		ingredients = {
-			{"speed-module", 5},
-			{"processing-unit", 10},
-			{"energy-shield-equipment", 15},
-			{"steel-plate", 20},
+			{'speed-module', 5},
+			{'processing-unit', 10},
+			{'energy-shield-equipment', 15},
+			{'steel-plate', 20},
 		},
 	},
 })
