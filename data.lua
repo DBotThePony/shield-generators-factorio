@@ -258,3 +258,172 @@ data:extend({
 		},
 	},
 })
+
+local values = require('__shield-generators__/values')
+
+local prototypes = {}
+
+do
+	local prerequisites = {'shield-generators-turret-shields-basics'}
+	local ingredients = {
+		{'automation-science-pack', 1},
+		{'logistic-science-pack', 1},
+		{'military-science-pack', 1},
+	}
+
+	for i, data in ipairs(values.TURRET_SHIELD_CAPACITY_RESEARCH) do
+		ingredients = table.deepcopy(ingredients)
+
+		for i2, ingr in ipairs(data[2]) do
+			table.insert(prerequisites, ingr[1])
+
+			if ingr[2] then
+				table.insert(ingredients, {ingr[1], 1})
+			end
+		end
+
+		table.insert(prototypes, {
+			type = 'technology',
+			name = 'shield-generators-turret-shield-capacity-' .. i,
+
+			icons = {
+				{
+					icon_size = 64,
+					icon_mipmaps = 4,
+					icon = '__base__/graphics/icons/energy-shield-equipment.png',
+				},
+
+				{
+					icon_size = 128,
+					icon_mipmaps = 3,
+					scale = 0.25,
+					shift = {25, 25},
+					icon = '__core__/graphics/icons/technology/constants/constant-battery.png',
+				},
+			},
+
+			effects = {
+				{
+					type = 'nothing',
+					effect_description = {'effect-name.shield-generators-turret-shield-capacity', data[1]}
+				}
+			},
+
+			prerequisites = prerequisites,
+
+			unit = {
+				count = data[3],
+				ingredients = ingredients,
+				time = data[4]
+			},
+
+			upgrade = true,
+		})
+
+		prerequisites = {'shield-generators-turret-shield-capacity-' .. i}
+	end
+
+	table.insert(prerequisites, 'space-science-pack')
+	ingredients = table.deepcopy(ingredients)
+	table.insert(ingredients, {'space-science-pack', 1})
+
+	table.insert(prototypes, {
+		type = 'technology',
+		name = 'shield-generators-turret-shield-capacity-' .. (#values.TURRET_SHIELD_CAPACITY_RESEARCH + 1),
+
+		icons = {
+			{
+				icon_size = 64,
+				icon_mipmaps = 4,
+				icon = '__base__/graphics/icons/energy-shield-equipment.png',
+			},
+
+			{
+				icon_size = 128,
+				icon_mipmaps = 3,
+				scale = 0.25,
+				shift = {25, 25},
+				icon = '__core__/graphics/icons/technology/constants/constant-battery.png',
+			},
+		},
+
+		effects = {
+			{
+				type = 'nothing',
+				effect_description = {'effect-name.shield-generators-turret-shield-capacity', values.TURRET_SHIELD_CAPACITY_RESEARCH_INFINITE}
+			}
+		},
+
+		prerequisites = prerequisites,
+
+		unit = {
+			count_formula = '2^(L-' .. #values.TURRET_SHIELD_CAPACITY_RESEARCH .. ')*1000',
+			ingredients = ingredients,
+			time = 60
+		},
+
+		upgrade = true,
+		max_level = 'infinite',
+	})
+
+	prerequisites = {'shield-generators-turret-shields-basics'}
+	ingredients = {
+		{'automation-science-pack', 1},
+		{'logistic-science-pack', 1},
+		{'military-science-pack', 1},
+	}
+
+	for i, data in ipairs(values.TURRET_SHIELD_SPEED_RESEARCH) do
+		ingredients = table.deepcopy(ingredients)
+
+		for i2, ingr in ipairs(data[2]) do
+			table.insert(prerequisites, ingr[1])
+
+			if ingr[2] then
+				table.insert(ingredients, {ingr[1], 1})
+			end
+		end
+
+		table.insert(prototypes, {
+			type = 'technology',
+			name = 'shield-generators-turret-shield-speed-' .. i,
+
+			icons = {
+				{
+					icon_size = 64,
+					icon_mipmaps = 4,
+					icon = '__base__/graphics/icons/energy-shield-equipment.png',
+				},
+
+				{
+					icon_size = 128,
+					icon_mipmaps = 3,
+					scale = 0.25,
+					shift = {25, 25},
+					icon = '__core__/graphics/icons/technology/constants/constant-speed.png',
+				},
+			},
+
+			effects = {
+				{
+					type = 'nothing',
+					effect_description = {'effect-name.shield-generators-turret-shield-speed', data[1]}
+				}
+			},
+
+			prerequisites = prerequisites,
+
+			unit = {
+				count = data[3],
+				ingredients = ingredients,
+				time = data[4]
+			},
+
+			upgrade = true,
+		})
+
+		prerequisites = {'shield-generators-turret-shield-speed-' .. i}
+	end
+end
+
+data:extend(prototypes)
