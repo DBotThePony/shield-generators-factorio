@@ -84,6 +84,9 @@ local function markShieldDirty(shield_generator)
 
 	-- if we are dirty, let's tick
 	if shield_generator.tracked_dirty then
+		rendering.set_visible(shield_generator.battery_bar_bg, true)
+		rendering.set_visible(shield_generator.battery_bar, true)
+
 		local hit = false
 
 		for i, data in ipairs(shield_generators_dirty) do
@@ -97,6 +100,9 @@ local function markShieldDirty(shield_generator)
 			table_insert(shield_generators_dirty, shield_generator)
 		end
 	else
+		rendering.set_visible(shield_generator.battery_bar_bg, false)
+		rendering.set_visible(shield_generator.battery_bar, false)
+
 		for i, data in ipairs(shield_generators_dirty) do
 			if data == shield_generator then
 				table.remove(shield_generators_dirty, i)
@@ -117,7 +123,7 @@ script.on_event(defines.events.on_tick, function(event)
 			local energy = data.unit.energy
 
 			if energy > 0 then
-				-- remember, whenever there was any dirty shields
+				-- whenever there was any dirty shields
 				local run_dirty = false
 
 				local count = #data.tracked_dirty
@@ -166,10 +172,18 @@ script.on_event(defines.events.on_tick, function(event)
 				end
 
 				-- not a single dirty entity - consider this shield provider is clean
-				if not run_dirty then
+				-- also check whenever should we draw battery charge bar
+				-- if we do have to, then don't mark as clean yet
+				if not run_dirty and energy >= data.max_energy then
 					data.tracked_dirty = nil
 					check = true
 				end
+
+				rendering.set_right_bottom(data.battery_bar,
+					data.unit, {
+						-data.width + 2 * data.width * energy / data.max_energy,
+						data.height
+					})
 			end
 
 			data.unit.energy = energy
@@ -184,12 +198,18 @@ script.on_event(defines.events.on_tick, function(event)
 		for i = #shield_generators_dirty, 1, -1 do
 			local data = shield_generators_dirty[i]
 
-			if not data.unit.valid or not data.tracked_dirty then
+			if not data.unit.valid then
 				table.remove(shield_generators_dirty, i)
+			elseif not data.tracked_dirty then
+				table.remove(shield_generators_dirty, i)
+
+				rendering.set_visible(data.battery_bar_bg, false)
+				rendering.set_visible(data.battery_bar, false)
 			end
 		end
 	end
 
+	-- iterate dirty self shields
 	for i = #shields_dirty, 1, -1 do
 		local tracked_data = shields_dirty[i]
 
@@ -321,7 +341,7 @@ local BACKGROUND_COLOR = {40 / 255, 40 / 255, 40 / 255}
 local SHIELD_COLOR = {243 / 255, 236 / 255, 53 / 255}
 local SHIELD_BUFF_COLOR = {92 / 255, 143 / 255, 247 / 255}
 
-local function makeShieldBars(entity, extra)
+local function determineDimensions(entity)
 	local width, height
 
 	if entity.prototype.selection_box then
@@ -343,6 +363,12 @@ local function makeShieldBars(entity, extra)
 
 	height = height + 0.4
 	width = width / 2
+
+	return width, height
+end
+
+local function makeShieldBars(entity, extra)
+	local width, height = determineDimensions(entity)
 
 	return width, height, rendering.draw_rectangle({
 		color = BACKGROUND_COLOR,
@@ -500,11 +526,42 @@ local function on_build(created_entity)
 	if created_entity.name == 'shield-generators-generator' then
 		destroy_remap[script.register_on_entity_destroyed(created_entity)] = created_entity.unit_number
 
+		local width, height = determineDimensions(created_entity)
+		height = height + 0.15
+
 		local data = {
 			unit = created_entity,
 			id = created_entity.unit_number,
 			tracked = {}, -- sequential table for quick iteration
 			tracked_hash = {}, -- hash table for quick lookup
+
+			width = width,
+			height = height,
+
+			battery_bar_bg = rendering.draw_rectangle({
+				color = BACKGROUND_COLOR,
+				forces = {created_entity.force},
+				filled = true,
+				surface = created_entity.surface,
+				left_top = created_entity,
+				left_top_offset = {-width, height - 0.15},
+				right_bottom = created_entity,
+				right_bottom_offset = {width, height},
+			}),
+
+			battery_bar = rendering.draw_rectangle({
+				color = SHIELD_BUFF_COLOR,
+				forces = {created_entity.force},
+				filled = true,
+				surface = created_entity.surface,
+				left_top = created_entity,
+				left_top_offset = {-width, height - 0.15},
+				right_bottom = created_entity,
+				right_bottom_offset = {-width, height},
+			}),
+
+			-- to be set to dynamic value later
+			max_energy = created_entity.electric_buffer_size,
 		}
 
 		shield_generators_hash[created_entity.unit_number] = table_insert(shield_generators, data)
@@ -626,13 +683,8 @@ local function on_destroy(index)
 				shield_generators_bound[tracked_data.unit.unit_number] = nil
 			end
 
-			if tracked_data.shield_bar_bg then
-				rendering.destroy(tracked_data.shield_bar_bg)
-			end
-
-			if tracked_data.shield_bar then
-				rendering.destroy(tracked_data.shield_bar)
-			end
+			rendering.destroy(tracked_data.shield_bar_bg)
+			rendering.destroy(tracked_data.shield_bar)
 		end
 
 		-- destroy tracked data in sequential table
@@ -642,6 +694,9 @@ local function on_destroy(index)
 				break
 			end
 		end
+
+		rendering.destroy(data.battery_bar_bg)
+		rendering.destroy(data.battery_bar)
 
 		-- destroy tracked data
 		table.remove(shield_generators, shield_generators_hash[index])
@@ -663,13 +718,8 @@ local function on_destroy(index)
 
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
 
-			if tracked_data.shield_bar_bg then
-				rendering.destroy(tracked_data.shield_bar_bg)
-			end
-
-			if tracked_data.shield_bar then
-				rendering.destroy(tracked_data.shield_bar)
-			end
+			rendering.destroy(tracked_data.shield_bar_bg)
+			rendering.destroy(tracked_data.shield_bar)
 
 			table.remove(shield_generator.tracked, shield_generator.tracked_hash[index])
 			local above = shield_generator.tracked_hash[index]
