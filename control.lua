@@ -122,6 +122,8 @@ local function mark_shield_dirty(shield_generator)
 	end
 end
 
+local _position = {}
+
 script.on_event(defines.events.on_tick, function(event)
 	local check = false
 
@@ -160,20 +162,16 @@ script.on_event(defines.events.on_tick, function(event)
 							energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
 							if tracked_data.shield_bar then
-								rendering.set_right_bottom(tracked_data.shield_bar,
-									tracked_data.unit, {
-										-tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health,
-										tracked_data.height
-									})
-
-								if tracked_data.shield_health >= tracked_data.max_health then
-									rendering.set_visible(tracked_data.shield_bar, false)
-									rendering.set_visible(tracked_data.shield_bar_bg, false)
-								end
+								_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+								_position[2] = tracked_data.height
+								rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
 							end
 
 							if energy <= 0 then break end
 						else
+							rendering.set_visible(tracked_data.shield_bar, false)
+							rendering.set_visible(tracked_data.shield_bar_bg, false)
+
 							table.remove(data.tracked_dirty, i2)
 							tracked_data.dirty = false
 						end
