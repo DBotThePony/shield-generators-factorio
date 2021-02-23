@@ -254,7 +254,7 @@ data:extend({
 		},
 
 		unit = {
-			count = 300,
+			count = 200,
 
 			ingredients = {
 				{'automation-science-pack', 1},
@@ -264,6 +264,117 @@ data:extend({
 			},
 
 			time = 30
+		},
+	},
+
+	{
+		type = 'technology',
+		name = 'shield-generators-generator-advanced',
+
+		icon_size = 64,
+		icon_mipmaps = 4,
+		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
+		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+
+		effects = {
+			{
+				type = 'unlock-recipe',
+				recipe = 'shield-generators-generator-advanced'
+			}
+		},
+
+		prerequisites = {
+			'low-density-structure',
+			'speed-module-2',
+			'effectivity-module',
+			'shield-generators-provider-shields-basics',
+		},
+
+		unit = {
+			count = 350,
+
+			ingredients = {
+				{'automation-science-pack', 1},
+				{'logistic-science-pack', 1},
+				{'military-science-pack', 2},
+				{'chemical-science-pack', 1},
+			},
+
+			time = 45
+		},
+	},
+
+	{
+		type = 'technology',
+		name = 'shield-generators-generator-elite',
+
+		icon_size = 64,
+		icon_mipmaps = 4,
+		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
+		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+
+		effects = {
+			{
+				type = 'unlock-recipe',
+				recipe = 'shield-generators-generator-elite'
+			}
+		},
+
+		prerequisites = {
+			'military-4',
+			'speed-module-3',
+			'effectivity-module-2',
+			'shield-generators-generator-advanced',
+		},
+
+		unit = {
+			count = 400,
+
+			ingredients = {
+				{'automation-science-pack', 1},
+				{'logistic-science-pack', 1},
+				{'military-science-pack', 2},
+				{'chemical-science-pack', 2},
+				{'utility-science-pack', 1},
+			},
+
+			time = 45
+		},
+	},
+
+	{
+		type = 'technology',
+		name = 'shield-generators-generator-ultimate',
+
+		icon_size = 64,
+		icon_mipmaps = 4,
+		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
+		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+
+		effects = {
+			{
+				type = 'unlock-recipe',
+				recipe = 'shield-generators-generator-ultimate'
+			}
+		},
+
+		prerequisites = {
+			'effectivity-module-3',
+			'shield-generators-generator-elite',
+		},
+
+		unit = {
+			count = 500,
+
+			ingredients = {
+				{'automation-science-pack', 1},
+				{'logistic-science-pack', 1},
+				{'military-science-pack', 3},
+				{'chemical-science-pack', 2},
+				{'utility-science-pack', 2},
+			},
+
+			time = 60
 		},
 	},
 
