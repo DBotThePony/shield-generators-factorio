@@ -182,16 +182,14 @@ script.on_event(defines.events.on_tick, function(event)
 				-- not a single dirty entity - consider this shield provider is clean
 				-- also check whenever should we draw battery charge bar
 				-- if we do have to, then don't mark as clean yet
-				if not run_dirty and energy >= data.max_energy then
+				if not run_dirty and energy + 1 >= data.max_energy then
 					data.tracked_dirty = nil
 					check = true
 				end
 
-				rendering.set_right_bottom(data.battery_bar,
-					data.unit, {
-						-data.width + 2 * data.width * energy / data.max_energy,
-						data.height
-					})
+				_position[1] = -data.width + 2 * data.width * energy / data.max_energy
+				_position[2] = data.height
+				rendering.set_right_bottom(data.battery_bar, data.unit, _position)
 			end
 
 			data.unit.energy = energy
@@ -214,6 +212,11 @@ script.on_event(defines.events.on_tick, function(event)
 
 				rendering.set_visible(data.battery_bar_bg, false)
 				rendering.set_visible(data.battery_bar, false)
+
+				for i, tracked_data in ipairs(data.tracked) do
+					rendering.set_visible(tracked_data.shield_bar, false)
+					rendering.set_visible(tracked_data.shield_bar_bg, false)
+				end
 			end
 		end
 	end
@@ -787,17 +790,10 @@ function on_destroyed(index)
 	if shields[index] then
 		local tracked_data = shields[index]
 
-		if tracked_data.shield and tracked_data.shield.destroy then
-			tracked_data.shield.destroy()
-		end
+		tracked_data.shield.destroy()
+		rendering.destroy(tracked_data.shield_bar_bg)
+		rendering.destroy(tracked_data.shield_bar)
 
-		if tracked_data.shield_bar_bg then
-			rendering.destroy(tracked_data.shield_bar_bg)
-		end
-
-		if tracked_data.shield_bar then
-			rendering.destroy(tracked_data.shield_bar)
-		end
 
 		if tracked_data.dirty then
 			for i = 1, #shields_dirty do
