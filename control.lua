@@ -646,7 +646,10 @@ script.on_event(defines.events.on_robot_built_entity, function(event)
 	on_build(event.created_entity)
 end)
 
-local function on_destroy(index)
+script.on_event(defines.events.on_entity_destroyed, function(event)
+	if not destroy_remap[event.registration_number] then return end
+	local index = destroy_remap[event.registration_number]
+
 	-- entity with internal shield destroyed
 	if shields[index] then
 		local tracked_data = shields[index]
@@ -738,11 +741,6 @@ local function on_destroy(index)
 
 		shield_generators_bound[index] = nil
 	end
-end
 
-script.on_event(defines.events.on_entity_destroyed, function(event)
-	local index = event.registration_number
-	if not destroy_remap[index] then return end
-	on_destroy(destroy_remap[index])
 	destroy_remap[index] = nil
 end)
