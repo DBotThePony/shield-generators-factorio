@@ -236,24 +236,21 @@ script.on_event(defines.events.on_tick, function(event)
 					tracked_data.health = tracked_data.unit.health
 				end
 
-				rendering.set_right_bottom(tracked_data.shield_bar,
-					tracked_data.unit, {
-						-tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health,
-						tracked_data.height
-					})
+				_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+				_position[2] = tracked_data.height
 
-				rendering.set_right_bottom(tracked_data.shield_bar_buffer,
-					tracked_data.unit, {
-						-tracked_data.width + 2 * tracked_data.width * energy / 8000000,
-						tracked_data.height + BAR_HEIGHT
-					})
+				rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+
+				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / 8000000
+				_position[2] = tracked_data.height + BAR_HEIGHT
+
+				rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
 			end
 		elseif energy > 0 and energy < 8000000 then
-			rendering.set_right_bottom(tracked_data.shield_bar_buffer,
-				tracked_data.unit, {
-					-tracked_data.width + 2 * tracked_data.width * energy / 8000000,
-					tracked_data.height + BAR_HEIGHT
-				})
+			_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / 8000000
+			_position[2] = tracked_data.height + BAR_HEIGHT
+
+			rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
 		else
 			rendering.set_visible(tracked_data.shield_bar, false)
 			rendering.set_visible(tracked_data.shield_bar_bg, false)
