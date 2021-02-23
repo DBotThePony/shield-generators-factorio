@@ -9,6 +9,8 @@ data:extend({
 		icon_size = 64,
 		icon_mipmaps = 4,
 
+		max_health = 15,
+
 		energy_production = '0W',
 		energy_usage = '0W',
 

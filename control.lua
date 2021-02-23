@@ -54,7 +54,7 @@ script.on_load(function()
 	end
 
 	for unumber, data in pairs(shields) do
-		if data.shield.energy < 8000000 then
+		if data.shield_health < data.max_health or data.shield.energy < 8000000 then
 			data.dirty = true
 			table_insert(shields_dirty, data)
 		end
@@ -193,21 +193,45 @@ script.on_event(defines.events.on_tick, function(event)
 	for i = #shields_dirty, 1, -1 do
 		local tracked_data = shields_dirty[i]
 
-		if tracked_data.shield.energy >= 8000000 then
+		local energy = tracked_data.shield.energy
+
+		if tracked_data.shield_health < tracked_data.max_health then
+			if energy > 0 then
+				local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, HITPOINTS_PER_TICK, tracked_data.max_health - tracked_data.shield_health)
+				tracked_data.shield_health = tracked_data.shield_health + delta
+				energy = energy - delta * CONSUMPTION_PER_HITPOINT
+				tracked_data.shield.energy = energy
+
+				if tracked_data.health ~= tracked_data.max_health then
+					-- update hacky health counter if required
+					tracked_data.health = tracked_data.unit.health
+				end
+
+				rendering.set_right_bottom(tracked_data.shield_bar,
+					tracked_data.unit, {
+						-tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health,
+						tracked_data.height
+					})
+
+				rendering.set_right_bottom(tracked_data.shield_bar_buffer,
+					tracked_data.unit, {
+						-tracked_data.width + 2 * tracked_data.width * energy / 8000000,
+						tracked_data.height
+					})
+			end
+		elseif energy < 8000000 then
+			rendering.set_right_bottom(tracked_data.shield_bar_buffer,
+				tracked_data.unit, {
+					-tracked_data.width + 2 * tracked_data.width * energy / 8000000,
+					tracked_data.height
+				})
+		else
 			rendering.set_visible(tracked_data.shield_bar, false)
 			rendering.set_visible(tracked_data.shield_bar_bg, false)
+			rendering.set_visible(tracked_data.shield_bar_buffer, false)
 
 			tracked_data.dirty = false
 			table.remove(shields_dirty, i)
-		else
-			rendering.set_visible(tracked_data.shield_bar, true)
-			rendering.set_visible(tracked_data.shield_bar_bg, true)
-
-			rendering.set_right_bottom(tracked_data.shield_bar,
-				tracked_data.unit, {
-					-tracked_data.width + 2 * tracked_data.width * tracked_data.shield.energy / 8000000,
-					tracked_data.height
-				})
 		end
 	end
 end)
@@ -220,11 +244,10 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 	-- internal shield
 	if shield then
-		local energy = shield.shield.energy
-		local consumption = CONSUMPTION_PER_HITPOINT * final_damage_amount
+		local shield_health = shield.shield_health
 		local health = shield.health or entity.health
 
-		if energy >= consumption then
+		if shield_health >= final_damage_amount then
 			-- HACK HACK HACK
 			-- we have no idea how to determine old health in this case
 			if final_health == 0 then
@@ -234,16 +257,19 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				shield.health = entity.health
 			end
 
-			shields[unit_number].shield.energy = energy - consumption
+			shields[unit_number].shield_health = shield_health - final_damage_amount
 		else
-			shield.health = health - final_damage_amount + energy / CONSUMPTION_PER_HITPOINT
+			shield.health = health - final_damage_amount + shield_health
 			entity.health = shield.health
-			shields[unit_number].shield.energy = 0
+			shields[unit_number].shield_health = 0
 		end
 
 		if not shield.dirty then
 			shield.dirty = true
 			table_insert(shields_dirty, shield)
+			rendering.set_visible(shield.shield_bar, true)
+			rendering.set_visible(shield.shield_bar_bg, true)
+			rendering.set_visible(shield.shield_bar_buffer, true)
 		end
 	elseif shield_generators_bound[unit_number] then -- bound shield generator provider
 		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[unit_number]]]
@@ -293,8 +319,9 @@ end)
 
 local BACKGROUND_COLOR = {40 / 255, 40 / 255, 40 / 255}
 local SHIELD_COLOR = {243 / 255, 236 / 255, 53 / 255}
+local SHIELD_BUFF_COLOR = {92 / 255, 143 / 255, 247 / 255}
 
-local function makeShieldBars(entity)
+local function makeShieldBars(entity, extra)
 	local width, height
 
 	if entity.prototype.selection_box then
@@ -335,7 +362,16 @@ local function makeShieldBars(entity)
 		left_top_offset = {-width, height - 0.15},
 		right_bottom = entity,
 		right_bottom_offset = {-width, height},
-	})
+	}), extra and rendering.draw_rectangle({
+		color = SHIELD_BUFF_COLOR,
+		forces = {entity.force},
+		filled = true,
+		surface = entity.surface,
+		left_top = entity,
+		left_top_offset = {-width, height - 0.075},
+		right_bottom = entity,
+		right_bottom_offset = {-width, height},
+	}) or nil
 end
 
 local function bindShield(entity, shield_provider)
@@ -507,7 +543,7 @@ local function on_build(created_entity)
 	elseif allowed_types_self[created_entity.type] then
 		destroy_remap[script.register_on_entity_destroyed(created_entity)] = created_entity.unit_number
 
-		local width, height, shield_bar_bg, shield_bar = makeShieldBars(created_entity)
+		local width, height, shield_bar_bg, shield_bar, shield_bar_buffer = makeShieldBars(created_entity, true)
 
 		local tracked_data = {
 			shield = created_entity.surface.create_entity({
@@ -516,10 +552,14 @@ local function on_build(created_entity)
 				force = created_entity.force,
 			}),
 
+			max_health = created_entity.prototype.max_health,
+			shield_health = 0,
+
 			width = width,
 			height = height,
 			shield_bar_bg = shield_bar_bg,
 			shield_bar = shield_bar,
+			shield_bar_buffer = shield_bar_buffer,
 
 			health = created_entity.health,
 			unit = created_entity,
@@ -527,6 +567,10 @@ local function on_build(created_entity)
 
 			dirty = true
 		}
+
+		tracked_data.shield.destructible = false
+		tracked_data.shield.minable = false
+		tracked_data.shield.rotatable = false
 
 		shields[created_entity.unit_number] = tracked_data
 		table_insert(shields_dirty, tracked_data)
