@@ -74,7 +74,7 @@ local function debug(str)
 end
 
 local function mark_shield_dirty(shield_generator)
-	shield_generator.tracked_dirty = nil
+	shield_generator.tracked_dirty = shield_generator.unit.energy < shield_generator.max_energy and {} or nil
 
 	-- build dirty list
 	for i, tracked_data in ipairs(shield_generator.tracked) do
@@ -395,7 +395,7 @@ local function bind_shield(entity, shield_provider)
 
 	local width, height = determineDimensions(entity)
 
-	if shields[entity.unit_number] then
+	if shields[unit_number] then
 		height = height + BAR_HEIGHT * 2
 	end
 
@@ -406,6 +406,8 @@ local function bind_shield(entity, shield_provider)
 		unit = entity,
 		shield_health = 0, -- how much hitpoints this shield has
 		-- upper bound by max_health
+		unit_number = entity.unit_number,
+		dirty = true,
 
 		width = width,
 		height = height,
@@ -435,7 +437,7 @@ local function bind_shield(entity, shield_provider)
 
 	-- tell globally that this entity has it's shield provider
 	-- which we can later lookup in shield_generators_hash[shield_provider.id]
-	shield_generators_bound[entity.unit_number] = shield_provider.id
+	shield_generators_bound[unit_number] = shield_provider.id
 
 	-- register
 	-- set tracked_hash index value to index in shield_provider.tracked
@@ -444,6 +446,16 @@ local function bind_shield(entity, shield_provider)
 	destroy_remap[script.register_on_entity_destroyed(entity)] = unit_number
 
 	-- debug('Bound entity ' .. unit_number .. ' to shield generator ' .. shield_provider.id .. ' with max health of ' .. tracked_data.max_health)
+
+	return true
+end
+
+local function rebind_shield(tracked_data, shield_provider)
+	local unit_number = tracked_data.unit.unit_number
+
+	-- just remap data from one to another
+	shield_generators_bound[unit_number] = shield_provider.id
+	shield_provider.tracked_hash[unit_number] = table_insert(shield_provider.tracked, tracked_data)
 
 	return true
 end
@@ -601,12 +613,11 @@ local function distance(a, b)
 	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)
 end
 
-local function on_built_shieldable_entity(entity)
-	-- find shield generators
-	local found = entity.surface.find_entities_filtered({
-		position = entity.position,
+local function find_closest_provider(force, position, surface)
+	local found = surface.find_entities_filtered({
+		position = position,
 		radius = 32,
-		force = entity.force,
+		force = force,
 		name = 'shield-generators-generator'
 	})
 
@@ -619,8 +630,6 @@ local function on_built_shieldable_entity(entity)
 		return
 	end
 
-	local pos = entity.position
-
 	for i = 2, #found do
 		local _provider = found[i]
 		local _provider_data = shield_generators[shield_generators_hash[_provider.unit_number]]
@@ -631,10 +640,17 @@ local function on_built_shieldable_entity(entity)
 		end
 
 		-- determine least loaded, or closest if load is equal
-		if #_provider_data.tracked < #provider_data.tracked or #_provider_data.tracked == #provider_data.tracked and distance(_provider.position, pos) < distance(provider.position, pos) then
+		if #_provider_data.tracked < #provider_data.tracked or #_provider_data.tracked == #provider_data.tracked and distance(_provider.position, position) < distance(provider.position, position) then
 			provider, provider_data = _provider, _provider_data
 		end
 	end
+
+	return provider, provider_data
+end
+
+local function on_built_shieldable_entity(entity)
+	local provider, provider_data = find_closest_provider(entity.force, entity.position, entity.surface)
+	if not provider then return end
 
 	if bind_shield(entity, provider_data) then
 		mark_shield_dirty(provider_data)
@@ -809,16 +825,38 @@ function on_destroyed(index)
 
 	if shield_generators_hash[index] then -- shield generator destroyed
 		local data = shield_generators[shield_generators_hash[index]]
+		local rebound_uids = {}
 
 		-- unbind shield generator from all of it's units
 		for i, tracked_data in ipairs(data.tracked) do
-			-- unbind shield generator from this unit
+			local rebound = false
+
 			if tracked_data.unit.valid then
-				shield_generators_bound[tracked_data.unit.unit_number] = nil
+				-- try to rebind to other shield provider
+				local provider, provider_data = find_closest_provider(tracked_data.unit.force, tracked_data.unit.position, tracked_data.unit.surface)
+
+				if provider then
+					rebound = true
+
+					if rebind_shield(tracked_data, provider_data) then
+						rebound_uids[provider.unit_number] = provider_data
+					end
+				end
 			end
 
-			rendering.destroy(tracked_data.shield_bar_bg)
-			rendering.destroy(tracked_data.shield_bar)
+			if not rebound then
+				-- unbind shield generator from this unit
+				if tracked_data.unit_number then
+					shield_generators_bound[tracked_data.unit_number] = nil
+				end
+
+				rendering.destroy(tracked_data.shield_bar_bg)
+				rendering.destroy(tracked_data.shield_bar)
+			end
+		end
+
+		for uid, data in pairs(rebound_uids) do
+			mark_shield_dirty(data)
 		end
 
 		-- destroy tracked data in sequential table
