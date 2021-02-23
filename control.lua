@@ -385,13 +385,14 @@ local allowed_types_self = {
 	['ammo-turret'] = true,
 	['electric-turret'] = true,
 	['fluid-turret'] = true,
+	['artillery-turret'] = true,
 }
 
 -- array to pass to find_entities_filtered and to build hash above
 local _allowed_types = {
 	'boiler',
 	'beacon',
-	'artillery-turret',
+	-- 'artillery-turret',
 	'accumulator',
 	'burner-generator',
 	'assembling-machine',
