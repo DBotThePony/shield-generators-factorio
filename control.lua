@@ -6,6 +6,11 @@ local on_destroyed
 -- joules per hitpoint
 local CONSUMPTION_PER_HITPOINT = 20000
 local HITPOINTS_PER_TICK = 1
+local BAR_HEIGHT = 0.15
+
+local BACKGROUND_COLOR = {40 / 255, 40 / 255, 40 / 255}
+local SHIELD_COLOR = {243 / 255, 236 / 255, 53 / 255}
+local SHIELD_BUFF_COLOR = {92 / 255, 143 / 255, 247 / 255}
 
 -- wwwwwwwwwtf??? with Lua of Wube
 -- why it doesn't return inserted index
@@ -138,38 +143,42 @@ script.on_event(defines.events.on_tick, function(event)
 				for i2 = count, 1, -1 do
 					local tracked_data = data.tracked[data.tracked_dirty[i2]]
 
-					if tracked_data.shield_health < tracked_data.max_health then
-						run_dirty = true
+					if tracked_data.unit.valid then
+						if tracked_data.shield_health < tracked_data.max_health then
+							run_dirty = true
 
-						if tracked_data.health ~= tracked_data.max_health then
-							-- update hacky health counter if required
-							tracked_data.health = tracked_data.unit.health
-						end
-
-						local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick, tracked_data.max_health - tracked_data.shield_health)
-						tracked_data.shield_health = tracked_data.shield_health + delta
-						energy = energy - delta * CONSUMPTION_PER_HITPOINT
-
-						if tracked_data.shield_bar then
-							rendering.set_right_bottom(tracked_data.shield_bar,
-								tracked_data.unit, {
-									-tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health,
-									tracked_data.height
-								})
-
-							if tracked_data.shield_health >= tracked_data.max_health then
-								rendering.set_visible(tracked_data.shield_bar, false)
-								rendering.set_visible(tracked_data.shield_bar_bg, false)
-							else
-								rendering.set_visible(tracked_data.shield_bar, true)
-								rendering.set_visible(tracked_data.shield_bar_bg, true)
+							if tracked_data.health ~= tracked_data.max_health then
+								-- update hacky health counter if required
+								tracked_data.health = tracked_data.unit.health
 							end
-						end
 
-						if energy <= 0 then break end
+							local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick, tracked_data.max_health - tracked_data.shield_health)
+							tracked_data.shield_health = tracked_data.shield_health + delta
+							energy = energy - delta * CONSUMPTION_PER_HITPOINT
+
+							if tracked_data.shield_bar then
+								rendering.set_right_bottom(tracked_data.shield_bar,
+									tracked_data.unit, {
+										-tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health,
+										tracked_data.height
+									})
+
+								if tracked_data.shield_health >= tracked_data.max_health then
+									rendering.set_visible(tracked_data.shield_bar, false)
+									rendering.set_visible(tracked_data.shield_bar_bg, false)
+								else
+									rendering.set_visible(tracked_data.shield_bar, true)
+									rendering.set_visible(tracked_data.shield_bar_bg, true)
+								end
+							end
+
+							if energy <= 0 then break end
+						else
+							table.remove(data.tracked_dirty, i2)
+							tracked_data.dirty = false
+						end
 					else
-						table.remove(data.tracked_dirty, i2)
-						tracked_data.dirty = false
+						debug('Encountered invalid unit with tracked index ' .. data.tracked_dirty[i2] .. ' in shield generator ' .. data.id)
 					end
 				end
 
@@ -238,14 +247,14 @@ script.on_event(defines.events.on_tick, function(event)
 				rendering.set_right_bottom(tracked_data.shield_bar_buffer,
 					tracked_data.unit, {
 						-tracked_data.width + 2 * tracked_data.width * energy / 8000000,
-						tracked_data.height
+						tracked_data.height + BAR_HEIGHT
 					})
 			end
 		elseif energy > 0 and energy < 8000000 then
 			rendering.set_right_bottom(tracked_data.shield_bar_buffer,
 				tracked_data.unit, {
 					-tracked_data.width + 2 * tracked_data.width * energy / 8000000,
-					tracked_data.height
+					tracked_data.height + BAR_HEIGHT
 				})
 		else
 			rendering.set_visible(tracked_data.shield_bar, false)
@@ -263,6 +272,59 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 	local unit_number = entity.unit_number
 	local shield = shields[unit_number]
+
+	-- bound shield generator provider
+	-- process is before internal shield
+	if shield_generators_bound[unit_number] then
+		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[unit_number]]]
+
+		if shield_generator then
+			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
+
+			if tracked_data then
+				local health = tracked_data.health
+				local shield_health = tracked_data.shield_health
+
+				if shield_health >= final_damage_amount then
+					-- HACK HACK HACK
+					-- we have no idea how to determine old health in this case
+					if final_health == 0 then
+						entity.health = tracked_data.health
+					else
+						entity.health = entity.health + final_damage_amount
+						tracked_data.health = entity.health
+					end
+
+					tracked_data.shield_health = shield_health - final_damage_amount
+					final_damage_amount = 0
+				else
+					final_damage_amount = final_damage_amount - tracked_data.shield_health
+					tracked_data.health = health - final_damage_amount
+					final_health = math.max(0, tracked_data.health)
+					entity.health = tracked_data.health
+					tracked_data.shield_health = 0
+				end
+
+				-- not dirty? mark shield generator as dirty
+				if not shield_generator.tracked_dirty then
+					mark_shield_dirty(shield_generator)
+
+				-- shield is dirty but we are not?
+				-- mark us as dirty
+				elseif not tracked_data.dirty then
+					tracked_data.dirty = true
+					table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
+				end
+			else
+				debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
+			end
+		else
+			debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generators_bound[unit_number] .. ', but this generator is invalid!')
+		end
+	end
+
+	-- if damage wa reflected by shield provider, don't do anything after
+	if final_damage_amount <= 0 then return end
 
 	-- internal shield
 	if shield then
@@ -293,55 +355,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			rendering.set_visible(shield.shield_bar_bg, true)
 			rendering.set_visible(shield.shield_bar_buffer, true)
 		end
-	elseif shield_generators_bound[unit_number] then -- bound shield generator provider
-		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[unit_number]]]
-
-		if shield_generator then
-			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
-
-			if tracked_data then
-				local health = tracked_data.health
-				local shield_health = tracked_data.shield_health
-
-				if shield_health >= final_damage_amount then
-					-- HACK HACK HACK
-					-- we have no idea how to determine old health in this case
-					if final_health == 0 then
-						entity.health = tracked_data.health
-					else
-						entity.health = entity.health + final_damage_amount
-						tracked_data.health = entity.health
-					end
-
-					tracked_data.shield_health = shield_health - final_damage_amount
-				else
-					tracked_data.health = health - final_damage_amount + tracked_data.shield_health
-					entity.health = tracked_data.health
-					tracked_data.shield_health = 0
-				end
-
-				-- not dirty? mark shield generator as dirty
-				if not shield_generator.tracked_dirty then
-					mark_shield_dirty(shield_generator)
-
-				-- shield is dirty but we are not?
-				-- mark us as dirty
-				elseif not tracked_data.dirty then
-					tracked_data.dirty = true
-					table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
-				end
-			else
-				debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
-			end
-		else
-			debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generators_bound[unit_number] .. ', but this generator is invalid!')
-		end
 	end
 end)
-
-local BACKGROUND_COLOR = {40 / 255, 40 / 255, 40 / 255}
-local SHIELD_COLOR = {243 / 255, 236 / 255, 53 / 255}
-local SHIELD_BUFF_COLOR = {92 / 255, 143 / 255, 247 / 255}
 
 local function determineDimensions(entity)
 	local width, height
@@ -369,39 +384,6 @@ local function determineDimensions(entity)
 	return width, height
 end
 
-local function makeShieldBars(entity, extra)
-	local width, height = determineDimensions(entity)
-
-	return width, height, rendering.draw_rectangle({
-		color = BACKGROUND_COLOR,
-		forces = {entity.force},
-		filled = true,
-		surface = entity.surface,
-		left_top = entity,
-		left_top_offset = {-width, height - 0.15},
-		right_bottom = entity,
-		right_bottom_offset = {width, height},
-	}), rendering.draw_rectangle({
-		color = SHIELD_COLOR,
-		forces = {entity.force},
-		filled = true,
-		surface = entity.surface,
-		left_top = entity,
-		left_top_offset = {-width, height - 0.15},
-		right_bottom = entity,
-		right_bottom_offset = {-width, height},
-	}), extra and rendering.draw_rectangle({
-		color = SHIELD_BUFF_COLOR,
-		forces = {entity.force},
-		filled = true,
-		surface = entity.surface,
-		left_top = entity,
-		left_top_offset = {-width, height - 0.075},
-		right_bottom = entity,
-		right_bottom_offset = {-width, height},
-	}) or nil
-end
-
 local function bind_shield(entity, shield_provider)
 	local unit_number = entity.unit_number
 
@@ -411,7 +393,11 @@ local function bind_shield(entity, shield_provider)
 
 	if not max_health or max_health <= 0 then return false end
 
-	local width, height, shield_bar_bg, shield_bar = makeShieldBars(entity)
+	local width, height = determineDimensions(entity)
+
+	if shields[entity.unit_number] then
+		height = height + BAR_HEIGHT * 2
+	end
 
 	-- create tracked data for shield state
 	local tracked_data = {
@@ -424,8 +410,27 @@ local function bind_shield(entity, shield_provider)
 		width = width,
 		height = height,
 
-		shield_bar_bg = shield_bar_bg,
-		shield_bar = shield_bar
+		shield_bar_bg = rendering.draw_rectangle({
+			color = BACKGROUND_COLOR,
+			forces = {entity.force},
+			filled = true,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height - BAR_HEIGHT},
+			right_bottom = entity,
+			right_bottom_offset = {width, height},
+		}),
+
+		shield_bar = rendering.draw_rectangle({
+			color = SHIELD_COLOR,
+			forces = {entity.force},
+			filled = true,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height - BAR_HEIGHT},
+			right_bottom = entity,
+			right_bottom_offset = {-width, height},
+		})
 	}
 
 	-- tell globally that this entity has it's shield provider
@@ -502,11 +507,12 @@ local _allowed_types = {
 	'transport-belt',
 	'underground-belt',
 
-	-- turrets, maybe give them their own shields
-	-- 'turret',
-	-- 'ammo-turret',
-	-- 'electric-turret',
-	-- 'fluid-turret',
+	-- turrets have their own shield, but if we build shield protector near them
+	-- protect them too
+	'turret',
+	'ammo-turret',
+	'electric-turret',
+	'fluid-turret',
 
 	'wall',
 
@@ -529,17 +535,17 @@ for _type in pairs(allowed_types_self) do
 	table_insert(_allowed_types_self, _type)
 end
 
-local function on_built_shield_provider(created_entity)
-	if shield_generators_hash[created_entity.unit_number] then return end -- wut
+local function on_built_shield_provider(entity)
+	if shield_generators_hash[entity.unit_number] then return end -- wut
 
-	destroy_remap[script.register_on_entity_destroyed(created_entity)] = created_entity.unit_number
+	destroy_remap[script.register_on_entity_destroyed(entity)] = entity.unit_number
 
-	local width, height = determineDimensions(created_entity)
-	height = height + 0.15
+	local width, height = determineDimensions(entity)
+	height = height + BAR_HEIGHT
 
 	local data = {
-		unit = created_entity,
-		id = created_entity.unit_number,
+		unit = entity,
+		id = entity.unit_number,
 		tracked = {}, -- sequential table for quick iteration
 		tracked_hash = {}, -- hash table for quick lookup
 
@@ -548,38 +554,38 @@ local function on_built_shield_provider(created_entity)
 
 		battery_bar_bg = rendering.draw_rectangle({
 			color = BACKGROUND_COLOR,
-			forces = {created_entity.force},
+			forces = {entity.force},
 			filled = true,
-			surface = created_entity.surface,
-			left_top = created_entity,
-			left_top_offset = {-width, height - 0.15},
-			right_bottom = created_entity,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height - BAR_HEIGHT},
+			right_bottom = entity,
 			right_bottom_offset = {width, height},
 		}),
 
 		battery_bar = rendering.draw_rectangle({
 			color = SHIELD_BUFF_COLOR,
-			forces = {created_entity.force},
+			forces = {entity.force},
 			filled = true,
-			surface = created_entity.surface,
-			left_top = created_entity,
-			left_top_offset = {-width, height - 0.15},
-			right_bottom = created_entity,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height - BAR_HEIGHT},
+			right_bottom = entity,
 			right_bottom_offset = {-width, height},
 		}),
 
 		-- to be set to dynamic value later
-		max_energy = created_entity.electric_buffer_size,
+		max_energy = entity.electric_buffer_size,
 	}
 
-	shield_generators_hash[created_entity.unit_number] = table_insert(shield_generators, data)
-	-- debug('Shield placed with index ' .. created_entity.unit_number .. ' and index ' .. shield_generators_hash[created_entity.unit_number])
+	shield_generators_hash[entity.unit_number] = table_insert(shield_generators, data)
+	-- debug('Shield placed with index ' .. entity.unit_number .. ' and index ' .. shield_generators_hash[entity.unit_number])
 
 	-- find buildings around already placed
-	local found = created_entity.surface.find_entities_filtered({
-		position = created_entity.position,
+	local found = entity.surface.find_entities_filtered({
+		position = entity.position,
 		radius = 32,
-		force = created_entity.force,
+		force = entity.force,
 		type = _allowed_types,
 	})
 
@@ -587,54 +593,85 @@ local function on_built_shield_provider(created_entity)
 		bind_shield(ent, data)
 	end
 
-	bind_shield(created_entity, data)
+	bind_shield(entity, data)
 	mark_shield_dirty(data)
 end
 
-local function on_built_shieldable_entity(created_entity)
+local function on_built_shieldable_entity(entity)
 	-- find shield generators
-	local found = created_entity.surface.find_entities_filtered({
-		position = created_entity.position,
+	local found = entity.surface.find_entities_filtered({
+		position = entity.position,
 		radius = 32,
-		force = created_entity.force,
+		force = entity.force,
 		name = 'shield-generators-generator'
 	})
 
 	if found[1] and shield_generators_hash[found[1].unit_number] then
 		local shield_generator = shield_generators[shield_generators_hash[found[1].unit_number]]
 
-		if bind_shield(created_entity, shield_generator) then
+		if bind_shield(entity, shield_generator) then
 			mark_shield_dirty(shield_generator)
 		end
 	end
 end
 
-local function on_built_shieldable_self(created_entity)
-	if shields[created_entity.unit_number] then return end -- wut
+local function on_built_shieldable_self(entity)
+	local index = entity.unit_number
+	if shields[index] then return end -- wut
 
-	destroy_remap[script.register_on_entity_destroyed(created_entity)] = created_entity.unit_number
+	destroy_remap[script.register_on_entity_destroyed(entity)] = index
 
-	local width, height, shield_bar_bg, shield_bar, shield_bar_buffer = makeShieldBars(created_entity, true)
+	local width, height = determineDimensions(entity)
 
 	local tracked_data = {
-		shield = created_entity.surface.create_entity({
+		shield = entity.surface.create_entity({
 			name = 'shield-generators-interface',
-			position = created_entity.position,
-			force = created_entity.force,
+			position = entity.position,
+			force = entity.force,
 		}),
 
-		max_health = created_entity.prototype.max_health,
+		max_health = entity.prototype.max_health,
 		shield_health = 0,
 
 		width = width,
 		height = height,
-		shield_bar_bg = shield_bar_bg,
-		shield_bar = shield_bar,
-		shield_bar_buffer = shield_bar_buffer,
 
-		health = created_entity.health,
-		unit = created_entity,
-		id = created_entity.unit_number,
+		shield_bar_bg = rendering.draw_rectangle({
+			color = BACKGROUND_COLOR,
+			forces = {entity.force},
+			filled = true,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height - BAR_HEIGHT},
+			right_bottom = entity,
+			right_bottom_offset = {width, height + BAR_HEIGHT},
+		}),
+
+		shield_bar = rendering.draw_rectangle({
+			color = SHIELD_COLOR,
+			forces = {entity.force},
+			filled = true,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height - BAR_HEIGHT},
+			right_bottom = entity,
+			right_bottom_offset = {-width, height},
+		}),
+
+		shield_bar_buffer = rendering.draw_rectangle({
+			color = SHIELD_BUFF_COLOR,
+			forces = {entity.force},
+			filled = true,
+			surface = entity.surface,
+			left_top = entity,
+			left_top_offset = {-width, height},
+			right_bottom = entity,
+			right_bottom_offset = {-width, height + BAR_HEIGHT},
+		}),
+
+		health = entity.health,
+		unit = entity,
+		id = index,
 
 		dirty = true
 	}
@@ -643,17 +680,40 @@ local function on_built_shieldable_self(created_entity)
 	tracked_data.shield.minable = false
 	tracked_data.shield.rotatable = false
 
-	shields[created_entity.unit_number] = tracked_data
+	shields[index] = tracked_data
 	table_insert(shields_dirty, tracked_data)
+
+	-- case: we got self shield after getting shield from shield provider
+	-- update bars for them to not overlap with ours
+	if shield_generators_bound[index] then -- entity under shield generator destroyed
+		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[index]]]
+
+		if shield_generator then
+			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
+
+			if tracked_data then
+				tracked_data.height = tracked_data.height + BAR_HEIGHT * 2
+
+				rendering.set_top_left(tracked_data.shield_bar, tracked_data.unit, {-tracked_data.width, tracked_data.height})
+				rendering.set_top_left(tracked_data.shield_bar_bg, tracked_data.unit, {-tracked_data.width, tracked_data.height})
+			end
+		end
+	end
 end
 
 local function on_built(created_entity)
 	if created_entity.name == 'shield-generators-generator' then
 		on_built_shield_provider(created_entity)
-	elseif allowed_types[created_entity.type] then
-		on_built_shieldable_entity(created_entity)
-	elseif allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
-		on_built_shieldable_self(created_entity)
+	else
+		if allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
+			-- create turret shield first
+			on_built_shieldable_self(created_entity)
+		end
+
+		if allowed_types[created_entity.type] then
+			-- create provider shield second
+			on_built_shieldable_entity(created_entity)
+		end
 	end
 end
 
@@ -726,7 +786,9 @@ function on_destroyed(index)
 		end
 
 		shields[index] = nil
-	elseif shield_generators_hash[index] then -- shield generator destroyed
+	end
+
+	if shield_generators_hash[index] then -- shield generator destroyed
 		local data = shield_generators[shield_generators_hash[index]]
 
 		-- unbind shield generator from all of it's units
@@ -765,17 +827,31 @@ function on_destroyed(index)
 	elseif shield_generators_bound[index] then -- entity under shield generator destroyed
 		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[index]]]
 
+		-- debug('Removing entity ' .. index .. ' from tracked!')
+
 		if shield_generator then
 			-- we got our shield generator data
 			-- let's remove us from tracked entities
+
+			-- debug('Removing entity ' .. index .. ' from tracked of ' .. shield_generator.id .. '!')
 
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
 
 			rendering.destroy(tracked_data.shield_bar_bg)
 			rendering.destroy(tracked_data.shield_bar)
 
+			local oindex = shield_generator.tracked_hash[index]
 			table.remove(shield_generator.tracked, shield_generator.tracked_hash[index])
-			local above = shield_generator.tracked_hash[index]
+
+			if shield_generator.tracked_dirty then
+				for i, _index in ipairs(shield_generator.tracked_dirty) do
+					if _index == oindex then
+						table.remove(shield_generator.tracked_dirty, i)
+						break
+					end
+				end
+			end
+
 			shield_generator.tracked_hash[index] = nil
 
 			-- force dirty list to be rebuilt
@@ -783,8 +859,16 @@ function on_destroyed(index)
 
 			-- update hash table to reflect change to indexes
 			for unit_number, index in pairs(shield_generator.tracked_hash) do
-				if index >= above then
+				if index >= oindex then
 					shield_generator.tracked_hash[unit_number] = index - 1
+				end
+			end
+
+			if shield_generator.tracked_dirty then
+				for i, _index in ipairs(shield_generator.tracked_dirty) do
+					if _index > oindex then
+						shield_generator.tracked_dirty[i] = _index - 1
+					end
 				end
 			end
 		end
