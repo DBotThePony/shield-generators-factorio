@@ -129,7 +129,7 @@ data:extend({
 			type = 'electric',
 			buffer_capacity = '8MJ',
 			usage_priority = 'primary-input',
-			input_flow_limit = '600kW',
+			input_flow_limit = '300kW',
 			output_flow_limit = '0W',
 			drain = '0W',
 		}
