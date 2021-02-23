@@ -1,6 +1,110 @@
 
--- energy interface per entity
+local beacon = data.raw.beacon.beacon
+
+if data.raw.technology["energy-shield-equipment"] then
+	table.insert(data.raw.technology["energy-shield-equipment"].prerequisites, 'shield-generators-basics')
+end
+
 data:extend({
+	-- technologies
+	-- basics of shields
+	{
+		type = "technology",
+		name = "shield-generators-basics",
+
+		icon_size = 64,
+		icon_mipmaps = 4,
+		-- icon = "__base__/graphics/technology/energy-shield-equipment.png",
+		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+
+		effects = {
+
+		},
+
+		prerequisites = {"military-2", "logistic-science-pack", "military-science-pack"},
+
+		unit = {
+			count = 100,
+
+			ingredients = {
+				{"automation-science-pack", 1},
+				{"logistic-science-pack", 1},
+				{"military-science-pack", 1},
+			},
+
+			time = 15
+		},
+	},
+
+	-- turret internal shields
+	{
+		type = "technology",
+		name = "shield-generators-turret-shields-basics",
+
+		icon_size = 64,
+		icon_mipmaps = 4,
+		-- icon = "__base__/graphics/technology/energy-shield-equipment.png",
+		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+
+		effects = {
+
+		},
+
+		prerequisites = {"shield-generators-basics", "gun-turret"},
+
+		unit = {
+			count = 200,
+
+			ingredients = {
+				{"automation-science-pack", 1},
+				{"logistic-science-pack", 1},
+				{"military-science-pack", 1},
+			},
+
+			time = 30
+		},
+	},
+
+	-- basic shield provider
+	{
+		type = "technology",
+		name = "shield-generators-provider-shields-basics",
+
+		icon_size = 64,
+		icon_mipmaps = 4,
+		-- icon = "__base__/graphics/technology/energy-shield-equipment.png",
+		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+
+		effects = {
+			{
+				type = "unlock-recipe",
+				recipe = "shield-generators-generator"
+			}
+		},
+
+		prerequisites = {
+			"shield-generators-basics",
+			"chemical-science-pack",
+			"military-3",
+			"advanced-electronics-2",
+			"speed-module",
+		},
+
+		unit = {
+			count = 300,
+
+			ingredients = {
+				{"automation-science-pack", 1},
+				{"logistic-science-pack", 1},
+				{"military-science-pack", 1},
+				{"chemical-science-pack", 1},
+			},
+
+			time = 30
+		},
+	},
+
+	-- energy interface per turret
 	{
 		type = 'electric-energy-interface',
 		name = 'shield-generators-interface',
@@ -29,13 +133,10 @@ data:extend({
 			output_flow_limit = '0W',
 			drain = '0W',
 		}
-	}
-})
+	},
 
-local beacon = data.raw.beacon.beacon
-
-data:extend({
-	{ -- energy shield building
+	-- energy shield provider building
+	{
 		type = 'electric-energy-interface',
 		name = 'shield-generators-generator',
 
@@ -67,24 +168,12 @@ data:extend({
 
 		energy_source = {
 			type = 'electric',
-			buffer_capacity = '200MJ',
+			buffer_capacity = '60MJ',
 			usage_priority = 'primary-input',
-			input_flow_limit = '200MW',
+			input_flow_limit = '4MW',
 			output_flow_limit = '0W',
 			drain = '0W',
 		},
-
-		--[[pictures = {
-			sheets = {
-				{
-					filename = "__base__/graphics/entity/beacon/beacon-bottom.png",
-					width = 16,
-					height = 16,
-					shift = util.by_pixel(0, 1),
-					scale = 4,
-				},
-			}
-		},]]
 
 		picture = {
 			layers = {
@@ -156,15 +245,16 @@ data:extend({
 	{
 		type = "recipe",
 		name = "shield-generators-generator",
-		enabled = true,
+		enabled = false,
 		result = "shield-generators-generator",
 
 		energy_required = 2,
 
 		ingredients = {
-			{"speed-module", 4},
-			{"processing-unit", 5},
-			{"energy-shield-equipment", 5},
+			{"speed-module", 5},
+			{"processing-unit", 10},
+			{"energy-shield-equipment", 15},
+			{"steel-plate", 20},
 		},
 	},
 })
