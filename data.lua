@@ -5,6 +5,169 @@ if data.raw.technology['energy-shield-equipment'] then
 	table.insert(data.raw.technology['energy-shield-equipment'].prerequisites, 'shield-generators-basics')
 end
 
+local basic_shield_provider = {
+	type = 'electric-energy-interface',
+	name = 'shield-generators-generator',
+
+	icon = '__base__/graphics/icons/beacon.png',
+	-- icon = '__base__/graphics/icons/energy-shield-equipment.png',
+	icon_size = 64,
+	icon_mipmaps = 4,
+
+	energy_production = '0W',
+	energy_usage = '0W',
+
+	collision_box = beacon.collision_box,
+	selection_box = beacon.selection_box,
+	drawing_box = beacon.drawing_box,
+	damaged_trigger_effect = beacon.damaged_trigger_effect,
+	flags = beacon.flags,
+	graphics_set = beacon.graphics_set,
+	water_reflection = beacon.water_reflection,
+	corpse = beacon.corpse,
+	dying_explosion = beacon.dying_explosion,
+	working_sound = beacon.working_sound,
+	max_health = 600,
+
+	vehicle_impact_sound = beacon.generic_impact,
+	open_sound = beacon.machine_open,
+	close_sound = beacon.machine_close,
+
+	minable = {mining_time = 0.2, result = 'shield-generators-generator'},
+
+	energy_source = {
+		type = 'electric',
+		buffer_capacity = '60MJ',
+		usage_priority = 'primary-input',
+		input_flow_limit = '4MW',
+		output_flow_limit = '0W',
+		drain = '0W',
+	},
+
+	picture = {
+		layers = {
+			{
+				filename = '__base__/graphics/entity/beacon/beacon-bottom.png',
+				width = 106,
+				height = 96,
+				shift = util.by_pixel(0, 1),
+				hr_version = {
+					filename = '__base__/graphics/entity/beacon/hr-beacon-bottom.png',
+					width = 212,
+					height = 192,
+					scale = 0.5,
+					shift = util.by_pixel(0.5, 1)
+				}
+			},
+
+			{
+				filename = '__base__/graphics/entity/beacon/beacon-shadow.png',
+				width = 122,
+				height = 90,
+				draw_as_shadow = true,
+				shift = util.by_pixel(12, 1),
+				hr_version = {
+					filename = '__base__/graphics/entity/beacon/hr-beacon-shadow.png',
+					width = 244,
+					height = 176,
+					scale = 0.5,
+					draw_as_shadow = true,
+					shift = util.by_pixel(12.5, 0.5)
+				}
+			},
+
+			{
+				filename = '__base__/graphics/entity/beacon/beacon-top.png',
+				width = 48,
+				height = 70,
+				repeat_count = 45,
+				animation_speed = 0.5,
+				shift = util.by_pixel(3, -19),
+				hr_version = {
+					filename = '__base__/graphics/entity/beacon/hr-beacon-top.png',
+					width = 96,
+					height = 140,
+					scale = 0.5,
+					repeat_count = 45,
+					animation_speed = 0.5,
+					shift = util.by_pixel(3, -19)
+				}
+			},
+		},
+	},
+}
+
+local advanced_shield_provider = table.deepcopy(basic_shield_provider)
+advanced_shield_provider.name = 'shield-generators-generator-advanced'
+advanced_shield_provider.energy_source.buffer_capacity = '200MJ'
+advanced_shield_provider.energy_source.input_flow_limit = '15MW'
+advanced_shield_provider.selection_box = {
+	{-2.5, -2.5},
+	{2.5, 2.5}
+}
+
+advanced_shield_provider.collision_box = {
+	{-2, -2},
+	{2, 2}
+}
+
+advanced_shield_provider.max_health = 1000
+advanced_shield_provider.minable.result = 'shield-generators-generator-advanced'
+advanced_shield_provider.picture.layers[1].scale = 1.5
+advanced_shield_provider.picture.layers[2].scale = 1.5
+advanced_shield_provider.picture.layers[3].scale = 1.5
+advanced_shield_provider.picture.layers[1].hr_version.scale = advanced_shield_provider.picture.layers[1].hr_version.scale * advanced_shield_provider.picture.layers[1].scale
+advanced_shield_provider.picture.layers[2].hr_version.scale = advanced_shield_provider.picture.layers[2].hr_version.scale * advanced_shield_provider.picture.layers[2].scale
+advanced_shield_provider.picture.layers[3].hr_version.scale = advanced_shield_provider.picture.layers[3].hr_version.scale * advanced_shield_provider.picture.layers[3].scale
+
+local elite_shield_provider = table.deepcopy(basic_shield_provider)
+elite_shield_provider.name = 'shield-generators-generator-elite'
+elite_shield_provider.energy_source.buffer_capacity = '750MJ'
+elite_shield_provider.energy_source.input_flow_limit = '50MW'
+elite_shield_provider.selection_box = {
+	{-3.5, -3.5},
+	{3.5, 3.5}
+}
+
+elite_shield_provider.collision_box = {
+	{-3, -3},
+	{3, 3}
+}
+
+elite_shield_provider.max_health = 1800
+elite_shield_provider.minable.result = 'shield-generators-generator-elite'
+elite_shield_provider.picture.layers[1].scale = 2
+elite_shield_provider.picture.layers[2].scale = 2
+elite_shield_provider.picture.layers[3].scale = 2
+elite_shield_provider.picture.layers[1].hr_version.scale = elite_shield_provider.picture.layers[1].hr_version.scale * elite_shield_provider.picture.layers[1].scale
+elite_shield_provider.picture.layers[2].hr_version.scale = elite_shield_provider.picture.layers[2].hr_version.scale * elite_shield_provider.picture.layers[2].scale
+elite_shield_provider.picture.layers[3].hr_version.scale = elite_shield_provider.picture.layers[3].hr_version.scale * elite_shield_provider.picture.layers[3].scale
+elite_shield_provider.picture.layers[3].hr_version.shift = util.by_pixel(7.5, -37)
+
+local ultimate_shield_provider = table.deepcopy(basic_shield_provider)
+ultimate_shield_provider.name = 'shield-generators-generator-ultimate'
+ultimate_shield_provider.energy_source.buffer_capacity = '3GJ'
+ultimate_shield_provider.energy_source.input_flow_limit = '400MW'
+ultimate_shield_provider.selection_box = {
+	{-4.5, -4.5},
+	{4.5, 4.5}
+}
+
+ultimate_shield_provider.collision_box = {
+	{-4, -4},
+	{4, 4}
+}
+
+ultimate_shield_provider.max_health = 3000
+ultimate_shield_provider.minable.result = 'shield-generators-generator-ultimate'
+ultimate_shield_provider.picture.layers[1].scale = 3
+ultimate_shield_provider.picture.layers[2].scale = 3
+ultimate_shield_provider.picture.layers[3].scale = 3
+ultimate_shield_provider.picture.layers[1].hr_version.scale = ultimate_shield_provider.picture.layers[1].hr_version.scale * ultimate_shield_provider.picture.layers[1].scale
+ultimate_shield_provider.picture.layers[2].hr_version.scale = ultimate_shield_provider.picture.layers[2].hr_version.scale * ultimate_shield_provider.picture.layers[2].scale
+ultimate_shield_provider.picture.layers[3].hr_version.scale = ultimate_shield_provider.picture.layers[3].hr_version.scale * ultimate_shield_provider.picture.layers[3].scale
+ultimate_shield_provider.picture.layers[3].hr_version.shift = util.by_pixel(8.5, -56)
+
 data:extend({
 	-- technologies
 	-- basics of shields
@@ -136,99 +299,11 @@ data:extend({
 	},
 
 	-- energy shield provider building (basic)
-	{
-		type = 'electric-energy-interface',
-		name = 'shield-generators-generator',
+	basic_shield_provider,
+	advanced_shield_provider,
+	elite_shield_provider,
+	ultimate_shield_provider,
 
-		-- icon = '__base__/graphics/icons/beacon.png',
-		icon = '__base__/graphics/icons/energy-shield-equipment.png',
-		icon_size = 64,
-		icon_mipmaps = 4,
-
-		energy_production = '0W',
-		energy_usage = '0W',
-
-		collision_box = beacon.collision_box,
-		selection_box = beacon.selection_box,
-		drawing_box = beacon.drawing_box,
-		damaged_trigger_effect = beacon.damaged_trigger_effect,
-		flags = beacon.flags,
-		graphics_set = beacon.graphics_set,
-		water_reflection = beacon.water_reflection,
-		corpse = beacon.corpse,
-		dying_explosion = beacon.dying_explosion,
-		working_sound = beacon.working_sound,
-		max_health = 600,
-
-		vehicle_impact_sound = beacon.generic_impact,
-		open_sound = beacon.machine_open,
-		close_sound = beacon.machine_close,
-
-		minable = {mining_time = 0.2, result = 'shield-generators-generator'},
-
-		energy_source = {
-			type = 'electric',
-			buffer_capacity = '60MJ',
-			usage_priority = 'primary-input',
-			input_flow_limit = '4MW',
-			output_flow_limit = '0W',
-			drain = '0W',
-		},
-
-		picture = {
-			layers = {
-				{
-					filename = '__base__/graphics/entity/beacon/beacon-bottom.png',
-					width = 106,
-					height = 96,
-					shift = util.by_pixel(0, 1),
-					hr_version = {
-						filename = '__base__/graphics/entity/beacon/hr-beacon-bottom.png',
-						width = 212,
-						height = 192,
-						scale = 0.5,
-						shift = util.by_pixel(0.5, 1)
-					}
-				},
-
-				{
-					filename = '__base__/graphics/entity/beacon/beacon-shadow.png',
-					width = 122,
-					height = 90,
-					draw_as_shadow = true,
-					shift = util.by_pixel(12, 1),
-					hr_version = {
-						filename = '__base__/graphics/entity/beacon/hr-beacon-shadow.png',
-						width = 244,
-						height = 176,
-						scale = 0.5,
-						draw_as_shadow = true,
-						shift = util.by_pixel(12.5, 0.5)
-					}
-				},
-
-				{
-					filename = '__base__/graphics/entity/beacon/beacon-top.png',
-					width = 48,
-					height = 70,
-					repeat_count = 45,
-					animation_speed = 0.5,
-					shift = util.by_pixel(3, -19),
-					hr_version = {
-						filename = '__base__/graphics/entity/beacon/hr-beacon-top.png',
-						width = 96,
-						height = 140,
-						scale = 0.5,
-						repeat_count = 45,
-						animation_speed = 0.5,
-						shift = util.by_pixel(3, -19)
-					}
-				},
-			},
-		},
-	},
-
-	-- energy shield building item
 	{
 		type = 'item',
 		name = 'shield-generators-generator',
@@ -236,8 +311,44 @@ data:extend({
 		icon_size = 64,
 		icon_mipmaps = 4,
 		subgroup = 'defensive-structure',
-    	order = 'b[turret]-n[shield-generator]',
+    	order = 'b[turret]-n[shield-generator-a]',
 		place_result = 'shield-generators-generator',
+		stack_size = 10
+	},
+
+	{
+		type = 'item',
+		name = 'shield-generators-generator-advanced',
+		icon = '__base__/graphics/icons/beacon.png',
+		icon_size = 64,
+		icon_mipmaps = 4,
+		subgroup = 'defensive-structure',
+    	order = 'b[turret]-n[shield-generator-b]',
+		place_result = 'shield-generators-generator-advanced',
+		stack_size = 10
+	},
+
+	{
+		type = 'item',
+		name = 'shield-generators-generator-elite',
+		icon = '__base__/graphics/icons/beacon.png',
+		icon_size = 64,
+		icon_mipmaps = 4,
+		subgroup = 'defensive-structure',
+    	order = 'b[turret]-n[shield-generator-c]',
+		place_result = 'shield-generators-generator-elite',
+		stack_size = 10
+	},
+
+	{
+		type = 'item',
+		name = 'shield-generators-generator-ultimate',
+		icon = '__base__/graphics/icons/beacon.png',
+		icon_size = 64,
+		icon_mipmaps = 4,
+		subgroup = 'defensive-structure',
+    	order = 'b[turret]-n[shield-generator-d]',
+		place_result = 'shield-generators-generator-ultimate',
 		stack_size = 10
 	},
 
@@ -251,10 +362,63 @@ data:extend({
 		energy_required = 2,
 
 		ingredients = {
+			{'accumulator', 20},
 			{'speed-module', 5},
 			{'processing-unit', 10},
 			{'energy-shield-equipment', 15},
 			{'steel-plate', 20},
+		},
+	},
+
+	{
+		type = 'recipe',
+		name = 'shield-generators-generator-advanced',
+		enabled = false,
+		result = 'shield-generators-generator-advanced',
+
+		energy_required = 4,
+
+		ingredients = {
+			{'accumulator', 40},
+			{'speed-module-2', 5},
+			{'effectivity-module', 4},
+			{'processing-unit', 10},
+			{'shield-generators-generator', 2},
+			{'low-density-structure', 10},
+		},
+	},
+
+	{
+		type = 'recipe',
+		name = 'shield-generators-generator-elite',
+		enabled = false,
+		result = 'shield-generators-generator-elite',
+
+		energy_required = 8,
+
+		ingredients = {
+			{'accumulator', 100},
+			{'speed-module-3', 5},
+			{'effectivity-module-2', 4},
+			{'processing-unit', 20},
+			{'shield-generators-generator-advanced', 2},
+		},
+	},
+
+	{
+		type = 'recipe',
+		name = 'shield-generators-generator-ultimate',
+		enabled = false,
+		result = 'shield-generators-generator-ultimate',
+
+		energy_required = 2,
+
+		ingredients = {
+			{'accumulator', 100},
+			{'speed-module-3', 5},
+			{'effectivity-module-3', 4},
+			{'processing-unit', 20},
+			{'shield-generators-generator-elite', 2},
 		},
 	},
 })

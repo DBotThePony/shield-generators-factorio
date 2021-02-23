@@ -94,11 +94,19 @@ local function debug(str)
 end
 
 local function mark_shield_dirty(shield_generator)
+	::MARK::
 	shield_generator.tracked_dirty = shield_generator.unit.energy < shield_generator.max_energy and {} or nil
 
 	-- build dirty list
 	for i, tracked_data in ipairs(shield_generator.tracked) do
-		if tracked_data.shield_health < tracked_data.max_health then
+		if not tracked_data.unit.valid then
+			-- that's a fuck you from factorio engine
+			-- when quickly placing belts with drag + rotate, corners get
+			-- replaced with removal and on_entity_destroyed is fired too late
+			-- since it happen this often, it is not very expensive to start from scratch
+			on_destroyed(tracked_data.unit_number)
+			goto MARK
+		elseif tracked_data.shield_health < tracked_data.max_health then
 			if not shield_generator.tracked_dirty then
 				shield_generator.tracked_dirty = {}
 			end
@@ -106,8 +114,10 @@ local function mark_shield_dirty(shield_generator)
 			tracked_data.dirty = true
 			table_insert(shield_generator.tracked_dirty, i)
 
-			rendering.set_visible(tracked_data.shield_bar, true)
-			rendering.set_visible(tracked_data.shield_bar_bg, true)
+			if rendering.is_valid(tracked_data.shield_bar) then
+				rendering.set_visible(tracked_data.shield_bar, true)
+				rendering.set_visible(tracked_data.shield_bar_bg, true)
+			end
 		end
 	end
 
@@ -976,6 +986,7 @@ end
 
 script.on_event(defines.events.on_entity_destroyed, function(event)
 	if not destroy_remap[event.registration_number] then return end
+	-- debug('DESTROY ' .. destroy_remap[event.registration_number])
 	on_destroyed(destroy_remap[event.registration_number])
 	destroy_remap[event.registration_number] = nil
 end)
