@@ -60,10 +60,10 @@ values.SHIELD_SPEED_RESEARCH = {
 	{35, {{'military-3', false}}, 500, 30},
 	{35, {}, 600, 30},
 
-	{35, {{'utility-science-pack', true}}, 800, 45},
-	{35, {}, 1000, 60},
-	{45, {{'military-4', false}}, 1200, 75},
-	{45, {}, 1500, 75},
+	{45, {{'utility-science-pack', true}}, 800, 45},
+	{45, {}, 1000, 60},
+	{55, {{'military-4', false}}, 1200, 75},
+	{55, {}, 1500, 75},
 
 	{65, {{'space-science-pack', true}}, 2500, 90},
 }
