@@ -39,13 +39,12 @@ script.on_init(function()
 	global.destroy_remap = {}
 	global.shield_generators_bound = {}
 	global.shield_generators = {}
-	global.shield_generators_hash = {}
 
 	shields = global.shields
 	destroy_remap = global.destroy_remap
 	shield_generators_bound = global.shield_generators_bound
 	shield_generators = global.shield_generators
-	shield_generators_hash = global.shield_generators_hash
+	shield_generators_hash = {}
 
 	shield_generators_dirty = {}
 	shields_dirty = {}
@@ -60,16 +59,15 @@ script.on_load(function()
 	global.destroy_remap = global.destroy_remap or {}
 	global.shield_generators_bound = global.shield_generators_bound or {}
 	global.shield_generators = global.shield_generators or {}
-	global.shield_generators_hash = global.shield_generators_hash or {}
 
 	shields = global.shields
 	destroy_remap = global.destroy_remap
 	shield_generators_bound = global.shield_generators_bound
 	shield_generators = global.shield_generators
-	shield_generators_hash = global.shield_generators_hash
 
 	shield_generators_dirty = {}
 	shields_dirty = {}
+	shield_generators_hash = {}
 
 	-- build dirty list from savegame
 	for i = 1, #shield_generators do
@@ -83,6 +81,10 @@ script.on_load(function()
 			data.dirty = true
 			table_insert(shields_dirty, data)
 		end
+	end
+
+	for i, data in ipairs(shield_generators) do
+		shield_generators_hash[data.unit.unit_number] = data
 	end
 
 	reload_values()
@@ -337,7 +339,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 	-- bound shield generator provider
 	-- process is before internal shield
 	if shield_generators_bound[unit_number] then
-		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[unit_number]]]
+		local shield_generator = shield_generators_hash[shield_generators_bound[unit_number]]
 
 		if shield_generator then
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
@@ -541,6 +543,10 @@ local function on_built_shield_provider(entity)
 		width = width,
 		height = height,
 
+		surface = entity.surface.index,
+		pos = entity.position,
+		range = RANGE_DEF[entity.name] * RANGE_DEF[entity.name],
+
 		battery_bar_bg = rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {entity.force},
@@ -578,7 +584,8 @@ local function on_built_shield_provider(entity)
 		max_energy = entity.electric_buffer_size,
 	}
 
-	shield_generators_hash[entity.unit_number] = table_insert(shield_generators, data)
+	table_insert(shield_generators, data)
+	shield_generators_hash[entity.unit_number] = data
 	-- debug('Shield placed with index ' .. entity.unit_number .. ' and index ' .. shield_generators_hash[entity.unit_number])
 
 	-- find buildings around already placed
@@ -601,52 +608,58 @@ local function distance(a, b)
 	return math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y))
 end
 
-local function find_closest_provider(force, position, surface)
-	local _found = surface.find_entities_filtered({
-		position = position,
-		radius = SEARCH_RANGE,
-		force = force,
-		name = values.GENERATORS
-	})
+local function disttosqr(a, b)
+	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)
+end
 
+local function find_closest_provider(force, position, surface)
 	local found = {}
 
-	for i, generator in ipairs(_found) do
-		if distance(generator.position, position) <= RANGE_DEF[generator.name] then
-			table_insert(found, generator)
+	if #shield_generators < 300 then
+		local sindex = surface.index
+
+		for i, generator in ipairs(shield_generators) do
+			if generator.unit.valid and generator.surface == sindex and disttosqr(generator.pos, position) <= generator.range then
+				table_insert(found, generator)
+			end
+		end
+	else
+		local _found = surface.find_entities_filtered({
+			position = position,
+			radius = SEARCH_RANGE,
+			force = force,
+			name = values.GENERATORS
+		})
+
+		for i, generator in ipairs(_found) do
+			if distance(generator.position, position) <= RANGE_DEF[generator.name] then
+				local provider_data = shield_generators_hash[generator.unit_number]
+
+				if provider_data then
+					table_insert(found, provider_data)
+				end
+			end
 		end
 	end
 
-	local provider = found[1]
-	if not provider then return end
-
-	local provider_data = shield_generators[shield_generators_hash[provider.unit_number]]
-	if not provider_data then
-		debug('Encountered shield provider entity ' .. provider.unit_number .. ' with no shield data!')
-		return
-	end
+	local provider_data = found[1]
+	if not provider_data then return end
 
 	for i = 2, #found do
-		local _provider = found[i]
-		local _provider_data = shield_generators[shield_generators_hash[_provider.unit_number]]
-
-		if not _provider_data then
-			debug('Encountered shield provider entity ' .. _provider.unit_number .. ' with no shield data!')
-			return
-		end
+		local _provider_data = found[i]
 
 		-- determine least loaded, or closest if load is equal
-		if #_provider_data.tracked < #provider_data.tracked or #_provider_data.tracked == #provider_data.tracked and distance(_provider.position, position) < distance(provider.position, position) then
-			provider, provider_data = _provider, _provider_data
+		if #_provider_data.tracked < #provider_data.tracked or #_provider_data.tracked == #provider_data.tracked and disttosqr(_provider.pos, position) < disttosqr(provider.pos, position) then
+			provider_data = _provider_data
 		end
 	end
 
-	return provider, provider_data
+	return provider_data
 end
 
 local function on_built_shieldable_entity(entity)
-	local provider, provider_data = find_closest_provider(entity.force, entity.position, entity.surface)
-	if not provider then return end
+	local provider_data = find_closest_provider(entity.force, entity.position, entity.surface)
+	if not provider_data then return end
 
 	if bind_shield(entity, provider_data) then
 		mark_shield_dirty(provider_data)
@@ -724,7 +737,7 @@ local function on_built_shieldable_self(entity)
 	-- case: we got self shield after getting shield from shield provider
 	-- update bars for them to not overlap with ours
 	if shield_generators_bound[index] then -- entity under shield generator destroyed
-		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[index]]]
+		local shield_generator = shield_generators_hash[shield_generators_bound[index]]
 
 		if shield_generator then
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
@@ -819,7 +832,7 @@ function on_destroyed(index, from_dirty)
 	end
 
 	if shield_generators_hash[index] then -- shield generator destroyed
-		local data = shield_generators[shield_generators_hash[index]]
+		local data = shield_generators_hash[index]
 		local rebound_uids = {}
 
 		-- unbind shield generator from all of it's units
@@ -828,13 +841,13 @@ function on_destroyed(index, from_dirty)
 
 			if tracked_data.unit.valid then
 				-- try to rebind to other shield provider
-				local provider, provider_data = find_closest_provider(tracked_data.unit.force, tracked_data.unit.position, tracked_data.unit.surface)
+				local provider_data = find_closest_provider(tracked_data.unit.force, tracked_data.unit.position, tracked_data.unit.surface)
 
-				if provider then
+				if provider_data then
 					rebound = true
 
 					if rebind_shield(tracked_data, provider_data) then
-						rebound_uids[provider.unit_number] = provider_data
+						rebound_uids[provider_data.id] = provider_data
 					end
 				end
 			end
@@ -865,19 +878,9 @@ function on_destroyed(index, from_dirty)
 		rendering.destroy(data.battery_bar_bg)
 		rendering.destroy(data.battery_bar)
 
-		-- destroy tracked data
-		table.remove(shield_generators, shield_generators_hash[index])
-		local above = shield_generators_hash[index]
 		shield_generators_hash[index] = nil
-
-		-- update hash table to reflect change to indexes
-		for unit_number, index in pairs(shield_generators_hash) do
-			if index >= above then
-				shield_generators_hash[unit_number] = index - 1
-			end
-		end
 	elseif shield_generators_bound[index] then -- entity under shield generator destroyed
-		local shield_generator = shield_generators[shield_generators_hash[shield_generators_bound[index]]]
+		local shield_generator = shield_generators_hash[shield_generators_bound[index]]
 
 		-- debug('Removing entity ' .. index .. ' from tracked!')
 
