@@ -46,4 +46,93 @@ values.TURRET_SHIELD_SPEED_RESEARCH = {
 	{65, {{'space-science-pack', true}}, 1500, 60}, -- final level
 }
 
+
+-- lookup hash table
+values.allowed_types = {}
+
+values.allowed_types_self = {
+	['turret'] = true,
+	['ammo-turret'] = true,
+	['electric-turret'] = true,
+	['fluid-turret'] = true,
+	['artillery-turret'] = true,
+}
+
+values._allowed_types_self = {}
+
+-- array to pass to find_entities_filtered and to build hash above
+values._allowed_types = {
+	'boiler',
+	'beacon',
+	-- 'artillery-turret',
+	'accumulator',
+	'burner-generator',
+	'assembling-machine',
+	'rocket-silo',
+	'furnace',
+	-- 'electric-energy-interface', -- porbably, interfaces are not good for this
+	'electric-pole',
+	'gate',
+	'generator',
+	'heat-pipe',
+	-- 'heat-interface', -- porbably, interfaces are not good for this
+	'inserter',
+	'lab',
+	'lamp',
+	-- 'land-mine', -- i think no
+	'linked-container',
+	'market',
+	'mining-drill',
+	'offshore-pump',
+	'pipe',
+	'infinity-pipe', -- editor stuff
+	'pipe-to-ground',
+	'power-switch',
+	'programmable-speaker',
+	'pump',
+	'radar',
+	'curved-rail',
+	'straight-rail',
+	'rail-chain-signal',
+	'rail-signal',
+	'reactor',
+	'roboport',
+	'solar-panel',
+	'storage-tank',
+	'train-stop',
+	'loader-1x1',
+	'loader',
+	'splitter',
+	'transport-belt',
+	'underground-belt',
+
+	-- turrets have their own shield, but if we build shield protector near them
+	-- protect them too
+	'turret',
+	'ammo-turret',
+	'electric-turret',
+	'fluid-turret',
+
+	'wall',
+
+	-- logic entities
+	'arithmetic-combinator',
+	'decider-combinator',
+	'constant-combinator',
+
+	-- chests
+	'container',
+	'logistic-container',
+	'infinity-container', -- editor specific
+}
+
+for i, _type in ipairs(values._allowed_types) do
+	values.allowed_types[_type] = true
+end
+
+for _type in pairs(values.allowed_types_self) do
+	table.insert(values._allowed_types_self, _type)
+end
+
+
 return values

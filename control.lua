@@ -1,6 +1,6 @@
 
 local shields, shields_dirty, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
-local on_destroyed
+local on_destroyed, bind_shield
 
 local values = require('__shield-generators__/values')
 
@@ -97,28 +97,61 @@ local function mark_shield_dirty(shield_generator)
 	::MARK::
 	shield_generator.tracked_dirty = shield_generator.unit.energy < shield_generator.max_energy and {} or nil
 
-	-- build dirty list
-	for i, tracked_data in ipairs(shield_generator.tracked) do
-		if not tracked_data.unit.valid then
-			-- that's a fuck you from factorio engine
-			-- when quickly placing belts with drag + rotate, corners get
-			-- replaced with removal and on_entity_destroyed is fired too late
-			-- since it happen this often, it is not very expensive to start from scratch
-			on_destroyed(tracked_data.unit_number)
-			goto MARK
-		elseif tracked_data.shield_health < tracked_data.max_health then
-			if not shield_generator.tracked_dirty then
-				shield_generator.tracked_dirty = {}
-			end
+	local had_to_remove = false
 
-			tracked_data.dirty = true
-			table_insert(shield_generator.tracked_dirty, i)
+	do
+		local i = 1
+		local size = #shield_generator.tracked
 
-			if rendering.is_valid(tracked_data.shield_bar) then
-				rendering.set_visible(tracked_data.shield_bar, true)
-				rendering.set_visible(tracked_data.shield_bar_bg, true)
+		while i <= size do
+			local tracked_data = shield_generator.tracked[i]
+
+			if not tracked_data.unit.valid then
+				-- that's a fuck you from factorio engine or design oversight
+				-- when quickly placing belts with drag + rotate, corners get
+				-- replaced with removal and on_entity_destroyed is fired too late
+
+				-- this also might happen on mod addition/removal
+				-- if mod changed prototype (e.g. furnace -> assembling-machine)
+				on_destroyed(tracked_data.unit_number, true)
+				size = size - 1
+				had_to_remove = true
+			elseif tracked_data.shield_health < tracked_data.max_health then
+				if not shield_generator.tracked_dirty then
+					shield_generator.tracked_dirty = {}
+				end
+
+				tracked_data.dirty = true
+				table_insert(shield_generator.tracked_dirty, i)
+
+				if rendering.is_valid(tracked_data.shield_bar) then
+					rendering.set_visible(tracked_data.shield_bar, true)
+					rendering.set_visible(tracked_data.shield_bar_bg, true)
+				end
+
+				i = i + 1
+			else
+				i = i + 1
 			end
 		end
+	end
+
+	if had_to_remove then
+		-- HACK - scan for entities around shield
+		-- they might got replaced by game engine
+		-- but why it doesn't have ANY event fired for such case?
+		local found = shield_generator.unit.surface.find_entities_filtered({
+			position = shield_generator.unit.position,
+			radius = RANGE_DEF[shield_generator.unit.name],
+			force = shield_generator.unit.force,
+			type = values._allowed_types,
+		})
+
+		for i, ent in ipairs(found) do
+			bind_shield(ent, shield_generator)
+		end
+
+		goto MARK
 	end
 
 	-- if we are dirty, let's tick
@@ -414,12 +447,12 @@ local function determineDimensions(entity)
 	return width, height
 end
 
-local function bind_shield(entity, shield_provider)
+function bind_shield(entity, shield_provider)
 	if not entity.destructible then return false end
 	local unit_number = entity.unit_number
 
-	if shield_provider.tracked_hash[unit_number] then return false end
 	if shield_generators_bound[unit_number] then return false end
+	if shield_provider.tracked_hash[unit_number] then return false end
 	local max_health = entity.prototype.max_health
 
 	if not max_health or max_health <= 0 then return false end
@@ -491,93 +524,6 @@ local function rebind_shield(tracked_data, shield_provider)
 	return true
 end
 
--- lookup hash table
-local allowed_types = {}
-
-local allowed_types_self = {
-	['turret'] = true,
-	['ammo-turret'] = true,
-	['electric-turret'] = true,
-	['fluid-turret'] = true,
-	['artillery-turret'] = true,
-}
-
-local _allowed_types_self = {}
-
--- array to pass to find_entities_filtered and to build hash above
-local _allowed_types = {
-	'boiler',
-	'beacon',
-	-- 'artillery-turret',
-	'accumulator',
-	'burner-generator',
-	'assembling-machine',
-	'rocket-silo',
-	'furnace',
-	-- 'electric-energy-interface', -- porbably, interfaces are not good for this
-	'electric-pole',
-	'gate',
-	'generator',
-	'heat-pipe',
-	-- 'heat-interface', -- porbably, interfaces are not good for this
-	'inserter',
-	'lab',
-	'lamp',
-	-- 'land-mine', -- i think no
-	'linked-container',
-	'market',
-	'mining-drill',
-	'offshore-pump',
-	'pipe',
-	'infinity-pipe', -- editor stuff
-	'pipe-to-ground',
-	'power-switch',
-	'programmable-speaker',
-	'pump',
-	'radar',
-	'curved-rail',
-	'straight-rail',
-	'rail-chain-signal',
-	'rail-signal',
-	'reactor',
-	'roboport',
-	'solar-panel',
-	'storage-tank',
-	'train-stop',
-	'loader-1x1',
-	'loader',
-	'splitter',
-	'transport-belt',
-	'underground-belt',
-
-	-- turrets have their own shield, but if we build shield protector near them
-	-- protect them too
-	'turret',
-	'ammo-turret',
-	'electric-turret',
-	'fluid-turret',
-
-	'wall',
-
-	-- logic entities
-	'arithmetic-combinator',
-	'decider-combinator',
-	'constant-combinator',
-
-	-- chests
-	'container',
-	'logistic-container',
-	'infinity-container', -- editor specific
-}
-
-for i, _type in ipairs(_allowed_types) do
-	allowed_types[_type] = true
-end
-
-for _type in pairs(allowed_types_self) do
-	table_insert(_allowed_types_self, _type)
-end
-
 local function on_built_shield_provider(entity)
 	if shield_generators_hash[entity.unit_number] then return end -- wut
 
@@ -640,7 +586,7 @@ local function on_built_shield_provider(entity)
 		position = entity.position,
 		radius = RANGE_DEF[entity.name],
 		force = entity.force,
-		type = _allowed_types,
+		type = values._allowed_types,
 	})
 
 	for i, ent in ipairs(found) do
@@ -797,12 +743,12 @@ local function on_built(created_entity)
 	if RANGE_DEF[created_entity.name] then
 		on_built_shield_provider(created_entity)
 	else
-		if allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
+		if values.allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
 			-- create turret shield first
 			on_built_shieldable_self(created_entity)
 		end
 
-		if allowed_types[created_entity.type] then
+		if values.allowed_types[created_entity.type] then
 			-- create provider shield second
 			on_built_shieldable_entity(created_entity)
 		end
@@ -826,7 +772,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 		for name, surface in pairs(game.surfaces) do
 			local found = surface.find_entities_filtered({
 				force = event.research.force,
-				type = _allowed_types_self,
+				type = values._allowed_types_self,
 			})
 
 			for i, ent in ipairs(found) do
@@ -841,7 +787,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 		for name, surface in pairs(game.surfaces) do
 			local found = surface.find_entities_filtered({
 				force = event.research.force,
-				type = _allowed_types_self,
+				type = values._allowed_types_self,
 			})
 
 			for i, ent in ipairs(found) do
@@ -851,7 +797,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 	end
 end)
 
-function on_destroyed(index)
+function on_destroyed(index, from_dirty)
 	-- entity with internal shield destroyed
 	if shields[index] then
 		local tracked_data = shields[index]
@@ -975,8 +921,10 @@ function on_destroyed(index)
 				end
 			end
 
-			-- force dirty list to be rebuilt
-			mark_shield_dirty(shield_generator)
+			if not from_dirty then
+				-- force dirty list to be rebuilt
+				mark_shield_dirty(shield_generator)
+			end
 		end
 
 		shield_generators_bound[index] = nil
@@ -988,4 +936,8 @@ script.on_event(defines.events.on_entity_destroyed, function(event)
 	-- debug('DESTROY ' .. destroy_remap[event.registration_number])
 	on_destroyed(destroy_remap[event.registration_number])
 	destroy_remap[event.registration_number] = nil
+end)
+
+script.on_event(defines.events.on_entity_cloned, function(event)
+	debug('on clone')
 end)
