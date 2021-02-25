@@ -641,7 +641,7 @@ do
 			type = 'electric',
 			buffer_capacity = '8MJ',
 			usage_priority = 'secondary-input',
-			input_flow_limit = '300kW',
+			input_flow_limit = '600kW',
 			output_flow_limit = '0W',
 			drain = '0W',
 		}
@@ -702,7 +702,7 @@ do
 		})
 
 		modifier = modifier + data[1] / 100
-		base.energy_source.input_flow_limit = string.format('%.2fkW', 300 * modifier)
+		base.energy_source.input_flow_limit = string.format('%.2fkW', 600 * modifier)
 		base.name = 'shield-generators-interface-' .. i
 		table.insert(prototypes, table.deepcopy(base))
 
