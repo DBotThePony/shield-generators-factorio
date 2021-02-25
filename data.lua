@@ -422,7 +422,7 @@ data:extend({
 		icon_size = 64,
 		icon_mipmaps = 4,
 		subgroup = 'defensive-structure',
-    	order = 'b[turret]-n[shield-generator-a]',
+		order = 'b[turret]-n[shield-generator-a]',
 		place_result = 'shield-generators-generator',
 		stack_size = 10
 	},
@@ -434,7 +434,7 @@ data:extend({
 		icon_size = 64,
 		icon_mipmaps = 4,
 		subgroup = 'defensive-structure',
-    	order = 'b[turret]-n[shield-generator-b]',
+		order = 'b[turret]-n[shield-generator-b]',
 		place_result = 'shield-generators-generator-advanced',
 		stack_size = 10
 	},
@@ -446,7 +446,7 @@ data:extend({
 		icon_size = 64,
 		icon_mipmaps = 4,
 		subgroup = 'defensive-structure',
-    	order = 'b[turret]-n[shield-generator-c]',
+		order = 'b[turret]-n[shield-generator-c]',
 		place_result = 'shield-generators-generator-elite',
 		stack_size = 10
 	},
@@ -458,7 +458,7 @@ data:extend({
 		icon_size = 64,
 		icon_mipmaps = 4,
 		subgroup = 'defensive-structure',
-    	order = 'b[turret]-n[shield-generator-d]',
+		order = 'b[turret]-n[shield-generator-d]',
 		place_result = 'shield-generators-generator-ultimate',
 		stack_size = 10
 	},
@@ -490,9 +490,9 @@ data:extend({
 		energy_required = 4,
 
 		ingredients = {
-			{'accumulator', 40},
+			{'accumulator', 20},
 			{'speed-module-2', 5},
-			{'effectivity-module', 4},
+			{'effectivity-module', 5},
 			{'processing-unit', 10},
 			{'shield-generators-generator', 2},
 			{'low-density-structure', 10},
@@ -508,10 +508,8 @@ data:extend({
 		energy_required = 8,
 
 		ingredients = {
-			{'accumulator', 100},
-			{'speed-module-3', 5},
-			{'effectivity-module-2', 4},
-			{'processing-unit', 20},
+			{'speed-module-2', 5},
+			{'effectivity-module-2', 5},
 			{'shield-generators-generator-advanced', 2},
 		},
 	},
@@ -525,10 +523,8 @@ data:extend({
 		energy_required = 2,
 
 		ingredients = {
-			{'accumulator', 100},
 			{'speed-module-3', 5},
-			{'effectivity-module-3', 4},
-			{'processing-unit', 20},
+			{'effectivity-module-3', 5},
 			{'shield-generators-generator-elite', 2},
 		},
 	},
