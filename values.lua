@@ -8,6 +8,9 @@ local values = {
 	BAR_HEIGHT = 0.15,
 }
 
+-- 25 health points per second
+values.SHIELD_BASE_HEALTH_RATE = 25 / 60
+
 values.SHIELD_RADIUS_COLOR = {243 / 255, 236 / 255, 53 / 255, 30 / 255}
 values.SHIELD_RADIUS_COLOR[1] = values.SHIELD_RADIUS_COLOR[1] * values.SHIELD_RADIUS_COLOR[4]
 values.SHIELD_RADIUS_COLOR[2] = values.SHIELD_RADIUS_COLOR[2] * values.SHIELD_RADIUS_COLOR[4]
@@ -22,20 +25,15 @@ values.GENERATORS = {
 
 values.TURRET_SHIELD_CAPACITY_RESEARCH = {
 	{15, {}, 100, 30},
-	{15, {{'military-3', false}}, 150, 30},
-	{25, {}, 300, 30},
+	{25, {{'military-3', false}}, 150, 30},
 
 	{35, {{'utility-science-pack', true}}, 400, 45},
-	{35, {{'military-4', false}}, 500, 45},
-	{45, {}, 600, 45},
-
-	{55, {}, 800, 60},
-	-- then infinite
+	{45, {{'military-4', false}}, 500, 45},
 }
 
-values.TURRET_SHIELD_CAPACITY_RESEARCH_INFINITE = 65
+values.SUPERCONDUCTING_PERCENT = 100
 
-values.TURRET_SHIELD_SPEED_RESEARCH = {
+values.TURRET_SHIELD_INPUT_RESEARCH = {
 	{25, {}, 250, 30},
 	{35, {{'military-3', false}}, 350, 45},
 
@@ -46,6 +44,29 @@ values.TURRET_SHIELD_SPEED_RESEARCH = {
 	{65, {{'space-science-pack', true}}, 1500, 60}, -- final level
 }
 
+values.TURRET_SHIELD_SPEED_RESEARCH = {
+	{25, {}, 300, 30},
+	{45, {{'military-3', false}}, 400, 30},
+
+	{55, {{'utility-science-pack', true}}, 500, 45},
+	{65, {{'military-4', false}}, 600, 45},
+
+	{85, {{'space-science-pack', true}}, 1000, 60}, -- final level
+}
+
+values.SHIELD_SPEED_RESEARCH = {
+	{15, {}, 300, 30},
+	{25, {}, 400, 30},
+	{35, {{'military-3', false}}, 500, 30},
+	{35, {}, 600, 30},
+
+	{35, {{'utility-science-pack', true}}, 800, 45},
+	{35, {}, 1000, 60},
+	{45, {{'military-4', false}}, 1200, 75},
+	{45, {}, 1500, 75},
+
+	{65, {{'space-science-pack', true}}, 2500, 90},
+}
 
 -- lookup hash table
 values.allowed_types = {}
@@ -133,6 +154,5 @@ end
 for _type in pairs(values.allowed_types_self) do
 	table.insert(values._allowed_types_self, _type)
 end
-
 
 return values

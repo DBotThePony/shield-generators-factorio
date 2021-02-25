@@ -2,7 +2,10 @@
 local shields, shields_dirty, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
 local on_destroyed, bind_shield
 
+local speed_cache, turret_speed_cache
+
 local values = require('__shield-generators__/values')
+local shield_util = require('__shield-generators__/util')
 
 -- joules per hitpoint
 local CONSUMPTION_PER_HITPOINT = settings.startup['shield-generators-joules-per-point'].value
@@ -20,6 +23,17 @@ end
 local RANGE_DEF = {}
 local SEARCH_RANGE
 
+local function rebuild_cache()
+	if not game then return end -- a
+
+	speed_cache, turret_speed_cache = {}, {}
+
+	for forcename, force in pairs(game.forces) do
+		speed_cache[forcename] = shield_util.recovery_speed_modifier(force.technologies) * values.SHIELD_BASE_HEALTH_RATE
+		turret_speed_cache[forcename] = shield_util.turret_recovery_speed_modifier(force.technologies) * values.SHIELD_BASE_HEALTH_RATE
+	end
+end
+
 local function reload_values()
 	RANGE_DEF['shield-generators-generator'] = settings.global['shield-generators-provider-range-basic'].value
 	RANGE_DEF['shield-generators-generator-advanced'] = settings.global['shield-generators-provider-range-advanced'].value
@@ -32,6 +46,8 @@ local function reload_values()
 		RANGE_DEF['shield-generators-generator-elite'],
 		RANGE_DEF['shield-generators-generator-ultimate']
 	)
+
+	rebuild_cache()
 end
 
 script.on_init(function()
@@ -77,7 +93,7 @@ script.on_load(function()
 	end
 
 	for unumber, data in pairs(shields) do
-		if data.shield_health < data.max_health or data.shield.energy < 8000000 then
+		if data.shield_health < data.max_health or data.shield.energy < data.max_energy then
 			data.dirty = true
 			table_insert(shields_dirty, data)
 		end
@@ -189,6 +205,10 @@ end
 local _position = {}
 
 script.on_event(defines.events.on_tick, function(event)
+	if not speed_cache then
+		rebuild_cache()
+	end
+
 	local check = false
 
 	-- iterate dirty shield providers
@@ -203,7 +223,8 @@ script.on_event(defines.events.on_tick, function(event)
 				local run_dirty = false
 
 				local count = #data.tracked_dirty
-				local health_per_tick = HITPOINTS_PER_TICK
+				-- local health_per_tick = HITPOINTS_PER_TICK
+				local health_per_tick = speed_cache[data.unit.force.name]
 
 				if count * health_per_tick * CONSUMPTION_PER_HITPOINT > energy then
 					health_per_tick = energy / (CONSUMPTION_PER_HITPOINT * count)
@@ -294,7 +315,7 @@ script.on_event(defines.events.on_tick, function(event)
 
 		if tracked_data.shield_health < tracked_data.max_health then
 			if energy > 0 then
-				local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, HITPOINTS_PER_TICK, tracked_data.max_health - tracked_data.shield_health)
+				local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name], tracked_data.max_health - tracked_data.shield_health)
 				tracked_data.shield_health = tracked_data.shield_health + delta
 				energy = energy - delta * CONSUMPTION_PER_HITPOINT
 				tracked_data.shield.energy = energy
@@ -309,13 +330,13 @@ script.on_event(defines.events.on_tick, function(event)
 
 				rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
 
-				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / 8000000
+				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
 				_position[2] = tracked_data.height + BAR_HEIGHT
 
 				rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
 			end
-		elseif energy > 0 and energy < 8000000 then
-			_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / 8000000
+		elseif energy > 0 and energy < tracked_data.max_energy then
+			_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
 			_position[2] = tracked_data.height + BAR_HEIGHT
 
 			rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
@@ -406,11 +427,11 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				shield.health = entity.health
 			end
 
-			shields[unit_number].shield_health = shield_health - final_damage_amount
+			shield.shield_health = shield_health - final_damage_amount
 		else
 			shield.health = health - final_damage_amount + shield_health
 			entity.health = shield.health
-			shields[unit_number].shield_health = 0
+			shield.shield_health = 0
 		end
 
 		if not shield.dirty then
@@ -468,7 +489,7 @@ function bind_shield(entity, shield_provider)
 	-- create tracked data for shield state
 	local tracked_data = {
 		health = entity.health,
-		max_health = entity.prototype.max_health,
+		max_health = entity.prototype.max_health * shield_util.max_capacity_modifier(shield_provider.unit.force.technologies),
 		unit = entity,
 		shield_health = 0, -- how much hitpoints this shield has
 		-- upper bound by max_health
@@ -676,7 +697,8 @@ local function on_built_shieldable_self(entity)
 
 	local tracked_data = {
 		shield = entity.surface.create_entity({
-			name = 'shield-generators-interface',
+			-- name = 'shield-generators-interface',
+			name = shield_util.turret_interface_name(entity.force.technologies),
 			position = entity.position,
 			force = entity.force,
 		}),
@@ -730,6 +752,8 @@ local function on_built_shieldable_self(entity)
 	tracked_data.shield.destructible = false
 	tracked_data.shield.minable = false
 	tracked_data.shield.rotatable = false
+	tracked_data.shield.electric_buffer_size = tracked_data.shield.electric_buffer_size * shield_util.turret_capacity_modifier(entity.force.technologies)
+	tracked_data.max_energy = tracked_data.shield.electric_buffer_size - 1
 
 	shields[index] = tracked_data
 	table_insert(shields_dirty, tracked_data)
@@ -793,6 +817,8 @@ script.on_event(defines.events.on_research_finished, function(event)
 			end
 		end
 	end
+
+	rebuild_cache()
 end)
 
 script.on_event(defines.events.on_research_reversed, function(event)
@@ -808,6 +834,8 @@ script.on_event(defines.events.on_research_reversed, function(event)
 			end
 		end
 	end
+
+	rebuild_cache()
 end)
 
 function on_destroyed(index, from_dirty)
