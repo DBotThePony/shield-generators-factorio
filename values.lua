@@ -8,8 +8,8 @@ local values = {
 	BAR_HEIGHT = 0.15,
 }
 
--- 25 health points per second
-values.SHIELD_BASE_HEALTH_RATE = 25 / 60
+-- 10 health points per second
+values.SHIELD_BASE_HEALTH_RATE = 10 / 60
 
 values.SHIELD_RADIUS_COLOR = {243 / 255, 236 / 255, 53 / 255, 30 / 255}
 values.SHIELD_RADIUS_COLOR[1] = values.SHIELD_RADIUS_COLOR[1] * values.SHIELD_RADIUS_COLOR[4]

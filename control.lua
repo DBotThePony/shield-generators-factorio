@@ -210,6 +210,7 @@ script.on_event(defines.events.on_tick, function(event)
 	end
 
 	local check = false
+	local tick = event.tick
 
 	-- iterate dirty shield providers
 	for i = 1, #shield_generators_dirty do
@@ -242,7 +243,16 @@ script.on_event(defines.events.on_tick, function(event)
 								tracked_data.health = tracked_data.unit.health
 							end
 
-							local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick, tracked_data.max_health - tracked_data.shield_health)
+							local mult = 1
+
+							-- first 1.5 seconds - base recharge rate
+							-- then linearly increase to triple speed
+							-- in next 3 seconds
+							if tracked_data.last_damage and tick - tracked_data.last_damage > 90 then
+								mult = math.min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
+							end
+
+							local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick * mult, tracked_data.max_health - tracked_data.shield_health)
 							tracked_data.shield_health = tracked_data.shield_health + delta
 							energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
@@ -315,7 +325,16 @@ script.on_event(defines.events.on_tick, function(event)
 
 		if tracked_data.shield_health < tracked_data.max_health then
 			if energy > 0 then
-				local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name], tracked_data.max_health - tracked_data.shield_health)
+				local mult = 1
+
+				-- first 1.5 seconds - base recharge rate
+				-- then linearly increase to triple speed
+				-- in next 3 seconds
+				if tracked_data.last_damage and tick - tracked_data.last_damage > 90 then
+					mult = math.min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
+				end
+
+				local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name] * mult, tracked_data.max_health - tracked_data.shield_health)
 				tracked_data.shield_health = tracked_data.shield_health + delta
 				energy = energy - delta * CONSUMPTION_PER_HITPOINT
 				tracked_data.shield.energy = energy
@@ -366,6 +385,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
 
 			if tracked_data then
+				tracked_data.last_damage = event.tick
+
 				local health = tracked_data.health
 				local shield_health = tracked_data.shield_health
 
@@ -409,8 +430,14 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		end
 	end
 
-	-- if damage wa reflected by shield provider, don't do anything after
-	if final_damage_amount <= 0 then return end
+	-- if damage wa reflected by shield provider, just update our "last damaged" tick
+	if final_damage_amount <= 0 then
+		if shield then
+			shield.last_damage = event.tick
+		end
+
+		return
+	end
 
 	-- internal shield
 	if shield then
@@ -470,7 +497,7 @@ local function determineDimensions(entity)
 	return width, height
 end
 
-function bind_shield(entity, shield_provider)
+function bind_shield(entity, shield_provider, tick)
 	if not entity.destructible then return false end
 	local unit_number = entity.unit_number
 
@@ -498,6 +525,8 @@ function bind_shield(entity, shield_provider)
 
 		width = width,
 		height = height,
+
+		last_damage = tick,
 
 		shield_bar_bg = rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
@@ -547,7 +576,7 @@ local function rebind_shield(tracked_data, shield_provider)
 	return true
 end
 
-local function on_built_shield_provider(entity)
+local function on_built_shield_provider(entity, tick)
 	if shield_generators_hash[entity.unit_number] then return end -- wut
 
 	destroy_remap[script.register_on_entity_destroyed(entity)] = entity.unit_number
@@ -618,10 +647,10 @@ local function on_built_shield_provider(entity)
 	})
 
 	for i, ent in ipairs(found) do
-		bind_shield(ent, data)
+		bind_shield(ent, data, tick)
 	end
 
-	bind_shield(entity, data)
+	bind_shield(entity, data, tick)
 	mark_shield_dirty(data)
 end
 
@@ -678,16 +707,16 @@ local function find_closest_provider(force, position, surface)
 	return provider_data
 end
 
-local function on_built_shieldable_entity(entity)
+local function on_built_shieldable_entity(entity, tick)
 	local provider_data = find_closest_provider(entity.force, entity.position, entity.surface)
 	if not provider_data then return end
 
-	if bind_shield(entity, provider_data) then
+	if bind_shield(entity, provider_data, tick) then
 		mark_shield_dirty(provider_data)
 	end
 end
 
-local function on_built_shieldable_self(entity)
+local function on_built_shieldable_self(entity, tick)
 	local index = entity.unit_number
 	if shields[index] then return end -- wut
 
@@ -708,6 +737,8 @@ local function on_built_shieldable_self(entity)
 
 		width = width,
 		height = height,
+
+		last_damage = tick,
 
 		shield_bar_bg = rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
@@ -776,32 +807,32 @@ local function on_built_shieldable_self(entity)
 	end
 end
 
-local function on_built(created_entity)
+local function on_built(created_entity, tick)
 	if RANGE_DEF[created_entity.name] then
-		on_built_shield_provider(created_entity)
+		on_built_shield_provider(created_entity, tick)
 	else
 		if values.allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
 			-- create turret shield first
-			on_built_shieldable_self(created_entity)
+			on_built_shieldable_self(created_entity, tick)
 		end
 
 		if values.allowed_types[created_entity.type] then
 			-- create provider shield second
-			on_built_shieldable_entity(created_entity)
+			on_built_shieldable_entity(created_entity, tick)
 		end
 	end
 end
 
 script.on_event(defines.events.on_built_entity, function(event)
-	on_built(event.created_entity)
+	on_built(event.created_entity, event.tick)
 end)
 
 script.on_event(defines.events.script_raised_built, function(event)
-	on_built(event.entity)
+	on_built(event.entity, event.tick)
 end)
 
 script.on_event(defines.events.on_robot_built_entity, function(event)
-	on_built(event.created_entity)
+	on_built(event.created_entity, event.tick)
 end)
 
 script.on_event(defines.events.on_research_finished, function(event)
