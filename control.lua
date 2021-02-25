@@ -84,7 +84,7 @@ script.on_load(function()
 	end
 
 	for i, data in ipairs(shield_generators) do
-		shield_generators_hash[data.unit.unit_number] = data
+		shield_generators_hash[data.id] = data
 	end
 
 	reload_values()
@@ -615,7 +615,7 @@ end
 local function find_closest_provider(force, position, surface)
 	local found = {}
 
-	if #shield_generators < 300 then
+	if #shield_generators < 400 then
 		local sindex = surface.index
 
 		for i, generator in ipairs(shield_generators) do
