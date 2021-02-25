@@ -860,7 +860,6 @@ function on_destroyed(index)
 		rendering.destroy(tracked_data.shield_bar_bg)
 		rendering.destroy(tracked_data.shield_bar)
 
-
 		if tracked_data.dirty then
 			for i = 1, #shields_dirty do
 				if shields_dirty[i] == tracked_data then
@@ -961,9 +960,6 @@ function on_destroyed(index)
 
 			shield_generator.tracked_hash[index] = nil
 
-			-- force dirty list to be rebuilt
-			mark_shield_dirty(shield_generator)
-
 			-- update hash table to reflect change to indexes
 			for unit_number, index in pairs(shield_generator.tracked_hash) do
 				if index >= oindex then
@@ -978,6 +974,9 @@ function on_destroyed(index)
 					end
 				end
 			end
+
+			-- force dirty list to be rebuilt
+			mark_shield_dirty(shield_generator)
 		end
 
 		shield_generators_bound[index] = nil
