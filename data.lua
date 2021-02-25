@@ -620,6 +620,7 @@ do
 	local base = {
 		type = 'electric-energy-interface',
 		name = 'shield-generators-interface-0',
+		localised_name = {'shield-generators-interface'},
 
 		icon = '__base__/graphics/icons/energy-shield-equipment.png',
 		icon_size = 64,
