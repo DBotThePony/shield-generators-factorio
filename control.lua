@@ -649,7 +649,7 @@ local function find_closest_provider(force, position, surface)
 		local _provider_data = found[i]
 
 		-- determine least loaded, or closest if load is equal
-		if #_provider_data.tracked < #provider_data.tracked or #_provider_data.tracked == #provider_data.tracked and disttosqr(_provider.pos, position) < disttosqr(provider.pos, position) then
+		if #_provider_data.tracked < #provider_data.tracked or #_provider_data.tracked == #provider_data.tracked and disttosqr(_provider_data.pos, position) < disttosqr(provider_data.pos, position) then
 			provider_data = _provider_data
 		end
 	end
