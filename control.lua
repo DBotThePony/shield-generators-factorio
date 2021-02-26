@@ -825,8 +825,8 @@ local function on_built_shieldable_self(entity, tick)
 			if tracked_data then
 				tracked_data.height = tracked_data.height + BAR_HEIGHT * 2
 
-				rendering.set_top_left(tracked_data.shield_bar, tracked_data.unit, {-tracked_data.width, tracked_data.height})
-				rendering.set_top_left(tracked_data.shield_bar_bg, tracked_data.unit, {-tracked_data.width, tracked_data.height})
+				rendering.set_left_top(tracked_data.shield_bar, tracked_data.unit, {-tracked_data.width, tracked_data.height})
+				rendering.set_left_top(tracked_data.shield_bar_bg, tracked_data.unit, {-tracked_data.width, tracked_data.height})
 			end
 		end
 	end
