@@ -188,6 +188,13 @@ local function mark_shield_dirty(shield_generator)
 				end
 
 				i = i + 1
+			elseif tracked_data.dirty then
+				if rendering.is_valid(tracked_data.shield_bar) then
+					rendering.set_visible(tracked_data.shield_bar, false)
+					rendering.set_visible(tracked_data.shield_bar_bg, false)
+				end
+
+				i = i + 1
 			else
 				i = i + 1
 			end
@@ -711,7 +718,9 @@ local function find_closest_provider(force, position, surface)
 	if #shield_generators < 400 then
 		local sindex = surface.index
 
-		for i, generator in ipairs(shield_generators) do
+		for i = 1, #shield_generators do
+			local generator = shield_generators[i]
+
 			if generator.unit.valid and generator.surface == sindex and disttosqr(generator.pos, position) <= generator.range then
 				table_insert(found, generator)
 			end
@@ -954,6 +963,19 @@ script.on_event(defines.events.on_research_finished, function(event)
 				on_built_shieldable_self(ent)
 			end
 		end
+	elseif event.research.name == 'shield-generators-superconducting-shields' then
+		-- this way because i plan expanding it (adding more HP techs)
+		local mult = shield_util.max_capacity_modifier(event.research.force.technologies)
+
+		for i = 1, #shield_generators do
+			local data = shield_generators[i]
+
+			for i2 = 1, #data.tracked do
+				data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
+			end
+
+			mark_shield_dirty(data)
+		end
 	end
 
 	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
@@ -978,6 +1000,20 @@ script.on_event(defines.events.on_research_reversed, function(event)
 			for i, ent in ipairs(found) do
 				on_destroyed(ent.unit_number)
 			end
+		end
+	elseif event.research.name == 'shield-generators-superconducting-shields' then
+		-- this way because i plan expanding it (adding more HP techs)
+		local mult = shield_util.max_capacity_modifier(event.research.force.technologies)
+
+		for i = 1, #shield_generators do
+			local data = shield_generators[i]
+
+			for i2 = 1, #data.tracked do
+				data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
+				data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
+			end
+
+			mark_shield_dirty(data)
 		end
 	end
 
