@@ -49,9 +49,12 @@ local function rebuild_cache()
 
 	speed_cache, turret_speed_cache = {}, {}
 
+	local turret = settings.global['shield-generators-hitpoints-base-rate-turret'].value
+	local provider = settings.global['shield-generators-hitpoints-base-rate-provider'].value
+
 	for forcename, force in pairs(game.forces) do
-		speed_cache[forcename] = shield_util.recovery_speed_modifier(force.technologies) * values.SHIELD_BASE_HEALTH_RATE
-		turret_speed_cache[forcename] = shield_util.turret_recovery_speed_modifier(force.technologies) * values.SHIELD_BASE_HEALTH_RATE
+		speed_cache[forcename] = shield_util.recovery_speed_modifier(force.technologies) * provider
+		turret_speed_cache[forcename] = shield_util.turret_recovery_speed_modifier(force.technologies) * turret
 	end
 end
 
@@ -67,6 +70,18 @@ local function reload_values()
 		RANGE_DEF['shield-generators-generator-elite'],
 		RANGE_DEF['shield-generators-generator-ultimate']
 	)
+
+	if global['shield-generators-provider-capacity'] ~= settings.global['shield-generators-provider-capacity'].value and game then
+		local value = settings.global['shield-generators-provider-capacity'].value
+		global['shield-generators-provider-capacity'] = value
+
+		for i = 1, #shield_generators do
+			if shield_generators[i].unit.valid and shield_generators[i].unit.prototype.electric_energy_source_prototype then
+				shield_generators[i].unit.electric_buffer_size = shield_generators[i].unit.prototype.electric_energy_source_prototype.buffer_capacity * value
+				shield_generators[i].max_energy = shield_generators[i].unit.electric_buffer_size
+			end
+		end
+	end
 
 	rebuild_cache()
 end
@@ -90,6 +105,7 @@ script.on_init(function()
 end)
 
 script.on_configuration_changed(reload_values)
+script.on_event(defines.events.on_runtime_mod_setting_changed, reload_values)
 
 script.on_load(function()
 	global.shields = global.shields or {}
@@ -608,6 +624,8 @@ local function on_built_shield_provider(entity, tick)
 
 	local width, height = determineDimensions(entity)
 	height = height + BAR_HEIGHT
+
+	entity.electric_buffer_size = entity.electric_buffer_size * settings.global['shield-generators-provider-capacity'].value
 
 	local data = {
 		unit = entity,

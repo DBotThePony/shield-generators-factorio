@@ -29,8 +29,16 @@ data:extend({
 
 	{
 		type = 'double-setting',
-		name = 'shield-generators-turret-charge-base-rate',
-		setting_type = 'startup',
+		name = 'shield-generators-hitpoints-base-rate-turret',
+		setting_type = 'runtime-global',
+		default_value = 10,
+		minimum_value = 1
+	},
+
+	{
+		type = 'double-setting',
+		name = 'shield-generators-hitpoints-base-rate-provider',
+		setting_type = 'runtime-global',
 		default_value = 15,
 		minimum_value = 1
 	},
@@ -39,8 +47,16 @@ data:extend({
 		type = 'int-setting',
 		name = 'shield-generators-turret-charge-base-capacity',
 		setting_type = 'startup',
-		default_value = 200,
+		default_value = 400,
 		minimum_value = 1
+	},
+
+	{
+		type = 'double-setting',
+		name = 'shield-generators-provider-capacity',
+		setting_type = 'runtime-global',
+		default_value = 1,
+		minimum_value = 0.01
 	},
 
 	{
