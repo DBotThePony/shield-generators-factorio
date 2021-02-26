@@ -966,15 +966,18 @@ script.on_event(defines.events.on_research_finished, function(event)
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
 		-- this way because i plan expanding it (adding more HP techs)
 		local mult = shield_util.max_capacity_modifier(event.research.force.technologies)
+		local force = event.research.force
 
 		for i = 1, #shield_generators do
 			local data = shield_generators[i]
 
-			for i2 = 1, #data.tracked do
-				data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
-			end
+			if data.unit.force == force then
+				for i2 = 1, #data.tracked do
+					data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
+				end
 
-			mark_shield_dirty(data)
+				mark_shield_dirty(data)
+			end
 		end
 	end
 
@@ -1004,16 +1007,19 @@ script.on_event(defines.events.on_research_reversed, function(event)
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
 		-- this way because i plan expanding it (adding more HP techs)
 		local mult = shield_util.max_capacity_modifier(event.research.force.technologies)
+		local force = event.research.force
 
 		for i = 1, #shield_generators do
 			local data = shield_generators[i]
 
-			for i2 = 1, #data.tracked do
-				data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
-				data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
-			end
+			if data.unit.force == force then
+				for i2 = 1, #data.tracked do
+					data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
+					data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
+				end
 
-			mark_shield_dirty(data)
+				mark_shield_dirty(data)
+			end
 		end
 	end
 
