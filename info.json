@@ -6,7 +6,7 @@
     "title": "Shield Generators",
     "author": "DBotThePony",
     "homepage": "https://gitlab.com/DBotThePony/shield-generators-factorio",
-    "description": "Adds shields to structures",
+    "description": "Adds turret shields and shield generators for civil structures.",
     "dependencies": [
         "base >= 1.1"
     ]
