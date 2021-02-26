@@ -92,10 +92,13 @@ script.on_load(function()
 		end
 	end
 
+	local nextindex = 1
+
 	for unumber, data in pairs(shields) do
 		if data.shield_health < data.max_health or data.shield.energy < data.max_energy then
 			data.dirty = true
-			table_insert(shields_dirty, data)
+			shields_dirty[nextindex] = data
+			nextindex = nextindex + 1
 		end
 	end
 
@@ -443,6 +446,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 	if shield then
 		local shield_health = shield.shield_health
 		local health = shield.health or entity.health
+
+		shield.last_damage = event.tick
 
 		if shield_health >= final_damage_amount then
 			-- HACK HACK HACK
@@ -835,6 +840,70 @@ script.on_event(defines.events.on_robot_built_entity, function(event)
 	on_built(event.created_entity, event.tick)
 end)
 
+local function refresh_sentry_shields(force)
+	local classname = shield_util.turret_interface_name(force.technologies)
+	local modif = shield_util.turret_capacity_modifier(force.technologies)
+
+	local nextindex = #shields_dirty + 1
+
+	for index, tracked_data in pairs(shields) do
+		if tracked_data.unit.force == force then
+			if tracked_data.shield.name ~= classname then
+				local energy = tracked_data.shield.energy
+				tracked_data.shield.destroy()
+
+				local shield = tracked_data.unit.surface.create_entity({
+					-- name = 'shield-generators-interface',
+					name = classname,
+					position = tracked_data.unit.position,
+					force = tracked_data.unit.force,
+				})
+
+				tracked_data.shield = shield
+
+				shield.destructible = false
+				shield.minable = false
+				shield.rotatable = false
+				shield.electric_buffer_size = shield.electric_buffer_size * modif
+				tracked_data.max_energy = shield.electric_buffer_size - 1
+
+				shield.energy = energy
+
+				-- debug('Recreated shield ' .. shield.unit_number .. ' for ' .. tracked_data.unit.unit_number)
+
+				if not tracked_data.dirty then
+					tracked_data.dirty = true
+					shields_dirty[nextindex] = tracked_data
+					nextindex = nextindex + 1
+
+					rendering.set_visible(tracked_data.shield_bar, true)
+					rendering.set_visible(tracked_data.shield_bar_bg, true)
+					rendering.set_visible(tracked_data.shield_bar_buffer, true)
+				end
+			else
+				local iface = tracked_data.shield.prototype.electric_energy_source_prototype
+
+				if iface then
+					tracked_data.shield.electric_buffer_size = iface.buffer_capacity * modif
+					tracked_data.max_energy = tracked_data.shield.electric_buffer_size - 1
+
+					-- debug('Updated shield ' .. tracked_data.shield.unit_number)
+
+					if not tracked_data.dirty then
+						tracked_data.dirty = true
+						shields_dirty[nextindex] = tracked_data
+						nextindex = nextindex + 1
+
+						rendering.set_visible(tracked_data.shield_bar, true)
+						rendering.set_visible(tracked_data.shield_bar_bg, true)
+						rendering.set_visible(tracked_data.shield_bar_buffer, true)
+					end
+				end
+			end
+		end
+	end
+end
+
 script.on_event(defines.events.on_research_finished, function(event)
 	if event.research.name == 'shield-generators-turret-shields-basics' then
 		for name, surface in pairs(game.surfaces) do
@@ -849,7 +918,15 @@ script.on_event(defines.events.on_research_finished, function(event)
 		end
 	end
 
-	rebuild_cache()
+	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
+		-- debug('rebuild cache')
+		rebuild_cache()
+	end
+
+	if values.SENTRY_REBUILD_TRIGGERS[event.research.name] then
+		-- debug('recreate shields')
+		refresh_sentry_shields(event.research.force)
+	end
 end)
 
 script.on_event(defines.events.on_research_reversed, function(event)
@@ -866,6 +943,30 @@ script.on_event(defines.events.on_research_reversed, function(event)
 		end
 	end
 
+	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
+		-- debug('rebuild cache')
+		rebuild_cache()
+	end
+
+	if values.SENTRY_REBUILD_TRIGGERS[event.research.name] then
+		-- debug('recreate shields')
+		refresh_sentry_shields(event.research.force)
+	end
+end)
+
+script.on_event(defines.events.on_force_created, function(event)
+	rebuild_cache()
+end)
+
+script.on_event(defines.events.on_forces_merged, function(event)
+	rebuild_cache()
+end)
+
+script.on_event(defines.events.on_force_reset, function(event)
+	rebuild_cache()
+end)
+
+script.on_event(defines.events.on_force_friends_changed, function(event)
 	rebuild_cache()
 end)
 

@@ -447,7 +447,7 @@ local prototypes = {
 			{'accumulator', 20},
 			{'speed-module', 5},
 			{'processing-unit', 10},
-			{'energy-shield-equipment', 15},
+			-- {'energy-shield-equipment', 15},
 			{'steel-plate', 20},
 		},
 	},
@@ -549,11 +549,12 @@ local prototypes = {
 }
 
 do
-	local prerequisites = {'shield-generators-turret-shields-basics'}
+	local prerequisites = {'shield-generators-turret-shields-basics', 'chemical-science-pack'}
 	local ingredients = {
 		{'automation-science-pack', 1},
 		{'logistic-science-pack', 1},
 		{'military-science-pack', 1},
+		{'chemical-science-pack', 1},
 	}
 
 	for i, data in ipairs(values.TURRET_SHIELD_CAPACITY_RESEARCH) do
@@ -610,17 +611,18 @@ do
 end
 
 do
-	local prerequisites = {'shield-generators-turret-shields-basics'}
+	local prerequisites = {'shield-generators-turret-shields-basics', 'chemical-science-pack'}
 	local ingredients = {
 		{'automation-science-pack', 1},
 		{'logistic-science-pack', 1},
 		{'military-science-pack', 1},
+		{'chemical-science-pack', 1},
 	}
 
 	local base = {
 		type = 'electric-energy-interface',
 		name = 'shield-generators-interface-0',
-		localised_name = {'shield-generators-interface'},
+		localised_name = {'entity-name.shield-generators-interface'},
 
 		icon = '__base__/graphics/icons/energy-shield-equipment.png',
 		icon_size = 64,
@@ -712,11 +714,12 @@ do
 end
 
 do
-	local prerequisites = {'shield-generators-turret-shields-basics'}
+	local prerequisites = {'shield-generators-turret-shields-basics', 'chemical-science-pack'}
 	local ingredients = {
 		{'automation-science-pack', 1},
 		{'logistic-science-pack', 1},
 		{'military-science-pack', 1},
+		{'chemical-science-pack', 1},
 	}
 
 	for i, data in ipairs(values.TURRET_SHIELD_SPEED_RESEARCH) do
@@ -778,6 +781,7 @@ do
 		{'automation-science-pack', 1},
 		{'logistic-science-pack', 1},
 		{'military-science-pack', 1},
+		{'chemical-science-pack', 1},
 	}
 
 	for i, data in ipairs(values.SHIELD_SPEED_RESEARCH) do

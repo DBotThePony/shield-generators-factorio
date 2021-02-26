@@ -55,18 +55,38 @@ values.TURRET_SHIELD_SPEED_RESEARCH = {
 }
 
 values.SHIELD_SPEED_RESEARCH = {
-	{15, {}, 300, 30},
-	{25, {}, 400, 30},
-	{35, {{'military-3', false}}, 500, 30},
-	{35, {}, 600, 30},
+	{15, {}, 200, 30},
+	{25, {}, 300, 30},
+	{35, {{'military-3', false}}, 400, 30},
+	{35, {}, 500, 30},
 
-	{45, {{'utility-science-pack', true}}, 800, 45},
-	{45, {}, 1000, 60},
-	{55, {{'military-4', false}}, 1200, 75},
-	{55, {}, 1500, 75},
+	{45, {{'utility-science-pack', true}}, 600, 45},
+	{45, {}, 700, 60},
+	{55, {{'military-4', false}}, 800, 75},
+	{55, {}, 900, 75},
 
-	{65, {{'space-science-pack', true}}, 2500, 90},
+	{65, {{'space-science-pack', true}}, 2000, 90},
 }
+
+values.TECH_REBUILD_TRIGGERS = {}
+
+for i in ipairs(values.SHIELD_SPEED_RESEARCH) do
+	values.TECH_REBUILD_TRIGGERS['shield-generators-provider-shield-speed-' .. i] = true
+end
+
+for i in ipairs(values.TURRET_SHIELD_SPEED_RESEARCH) do
+	values.TECH_REBUILD_TRIGGERS['shield-generators-turret-shield-speed-' .. i] = true
+end
+
+values.SENTRY_REBUILD_TRIGGERS = {}
+
+for i in ipairs(values.TURRET_SHIELD_INPUT_RESEARCH) do
+	values.SENTRY_REBUILD_TRIGGERS['shield-generators-turret-shield-input-' .. i] = true
+end
+
+for i in ipairs(values.TURRET_SHIELD_CAPACITY_RESEARCH) do
+	values.SENTRY_REBUILD_TRIGGERS['shield-generators-turret-shield-capacity-' .. i] = true
+end
 
 -- lookup hash table
 values.allowed_types = {}
@@ -85,7 +105,7 @@ values._allowed_types_self = {}
 values._allowed_types = {
 	'boiler',
 	'beacon',
-	-- 'artillery-turret',
+	'artillery-turret',
 	'accumulator',
 	'burner-generator',
 	'assembling-machine',
