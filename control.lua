@@ -1,4 +1,23 @@
 
+-- Copyright (C) 2021 DBotThePony
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do so,
+-- subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all copies
+-- or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+-- INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+-- PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+-- FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+-- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+-- DEALINGS IN THE SOFTWARE.
+
 local shields, shields_dirty, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
 local on_destroyed, bind_shield
 
@@ -9,8 +28,10 @@ local shield_util = require('__shield-generators__/util')
 
 -- joules per hitpoint
 local CONSUMPTION_PER_HITPOINT = settings.startup['shield-generators-joules-per-point'].value
-local HITPOINTS_PER_TICK = 1
 local BAR_HEIGHT = values.BAR_HEIGHT
+
+local math_min = math.min
+local math_max = math.max
 
 -- wwwwwwwwwtf??? with Lua of Wube
 -- why it doesn't return inserted index
@@ -227,7 +248,6 @@ script.on_event(defines.events.on_tick, function(event)
 				local run_dirty = false
 
 				local count = #data.tracked_dirty
-				-- local health_per_tick = HITPOINTS_PER_TICK
 				local health_per_tick = speed_cache[data.unit.force.name]
 
 				if count * health_per_tick * CONSUMPTION_PER_HITPOINT > energy then
@@ -252,10 +272,10 @@ script.on_event(defines.events.on_tick, function(event)
 							-- then linearly increase to triple speed
 							-- in next 3 seconds
 							if tracked_data.last_damage and tick - tracked_data.last_damage > 90 then
-								mult = math.min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
+								mult = math_min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
 							end
 
-							local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick * mult, tracked_data.max_health - tracked_data.shield_health)
+							local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick * mult, tracked_data.max_health - tracked_data.shield_health)
 							tracked_data.shield_health = tracked_data.shield_health + delta
 							energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
@@ -334,10 +354,10 @@ script.on_event(defines.events.on_tick, function(event)
 				-- then linearly increase to triple speed
 				-- in next 3 seconds
 				if tracked_data.last_damage and tick - tracked_data.last_damage > 90 then
-					mult = math.min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
+					mult = math_min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
 				end
 
-				local delta = math.min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name] * mult, tracked_data.max_health - tracked_data.shield_health)
+				local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name] * mult, tracked_data.max_health - tracked_data.shield_health)
 				tracked_data.shield_health = tracked_data.shield_health + delta
 				energy = energy - delta * CONSUMPTION_PER_HITPOINT
 				tracked_data.shield.energy = energy
@@ -408,7 +428,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				else
 					final_damage_amount = final_damage_amount - tracked_data.shield_health
 					tracked_data.health = health - final_damage_amount
-					final_health = math.max(0, tracked_data.health)
+					final_health = math_max(0, tracked_data.health)
 					entity.health = tracked_data.health
 					tracked_data.shield_health = 0
 				end
