@@ -49,8 +49,8 @@ local function rebuild_cache()
 
 	speed_cache, turret_speed_cache = {}, {}
 
-	local turret = settings.global['shield-generators-hitpoints-base-rate-turret'].value
-	local provider = settings.global['shield-generators-hitpoints-base-rate-provider'].value
+	local turret = settings.global['shield-generators-hitpoints-base-rate-turret'].value / 60
+	local provider = settings.global['shield-generators-hitpoints-base-rate-provider'].value / 60
 
 	for forcename, force in pairs(game.forces) do
 		speed_cache[forcename] = shield_util.recovery_speed_modifier(force.technologies) * provider
