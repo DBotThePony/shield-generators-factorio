@@ -124,9 +124,13 @@ script.on_load(function()
 
 	-- build dirty list from savegame
 	for i = 1, #shield_generators do
-		if shield_generators[i].tracked_dirty then
-			table.insert(shield_generators_dirty, shield_generators[i])
+		local data = shield_generators[i]
+
+		if data.tracked_dirty then
+			table.insert(shield_generators_dirty, data)
 		end
+
+		shield_generators_hash[data.id] = data
 	end
 
 	local nextindex = 1
@@ -137,10 +141,6 @@ script.on_load(function()
 			shields_dirty[nextindex] = data
 			nextindex = nextindex + 1
 		end
-	end
-
-	for i, data in ipairs(shield_generators) do
-		shield_generators_hash[data.id] = data
 	end
 
 	reload_values()
@@ -968,10 +968,12 @@ script.on_event(defines.events.on_research_finished, function(event)
 		local mult = shield_util.max_capacity_modifier(event.research.force.technologies)
 		local force = event.research.force
 
-		for i = 1, #shield_generators do
+		for i = #shield_generators, 1, -1 do
 			local data = shield_generators[i]
 
-			if data.unit.force == force then
+			if not data.unit.valid then
+				on_destroyed(data.id, false)
+			elseif data.unit.force == force then
 				for i2 = 1, #data.tracked do
 					data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
 				end
@@ -1009,10 +1011,12 @@ script.on_event(defines.events.on_research_reversed, function(event)
 		local mult = shield_util.max_capacity_modifier(event.research.force.technologies)
 		local force = event.research.force
 
-		for i = 1, #shield_generators do
+		for i = #shield_generators, 1, -1 do
 			local data = shield_generators[i]
 
-			if data.unit.force == force then
+			if not data.unit.valid then
+				on_destroyed(data.id, false)
+			elseif data.unit.force == force then
 				for i2 = 1, #data.tracked do
 					data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
 					data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
@@ -1109,7 +1113,7 @@ function on_destroyed(index, from_dirty)
 
 		-- destroy tracked data in sequential table
 		for i, _data in ipairs(shield_generators) do
-			if _data == index then
+			if _data == data then
 				table.remove(shield_generators, i)
 				break
 			end
