@@ -151,6 +151,8 @@ local function debug(str)
 	log(str)
 end
 
+local validate_self_bars, validate_provider_bars, validate_shielded_bars
+
 local function mark_shield_dirty(shield_generator)
 	::MARK::
 	shield_generator.tracked_dirty = shield_generator.unit.energy < shield_generator.max_energy and {} or nil
@@ -219,10 +221,16 @@ local function mark_shield_dirty(shield_generator)
 		goto MARK
 	end
 
+	validate_provider_bars(shield_generator)
+
 	-- if we are dirty, let's tick
 	if shield_generator.tracked_dirty then
 		rendering.set_visible(shield_generator.battery_bar_bg, true)
 		rendering.set_visible(shield_generator.battery_bar, true)
+
+		for i, tracked_data in ipairs(shield_generator.tracked) do
+			validate_shielded_bars(tracked_data)
+		end
 
 		local hit = false
 
@@ -465,6 +473,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				elseif not tracked_data.dirty then
 					tracked_data.dirty = true
 					table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
+					validate_shielded_bars(tracked_data)
 					rendering.set_visible(tracked_data.shield_bar, true)
 					rendering.set_visible(tracked_data.shield_bar_bg, true)
 				end
@@ -512,6 +521,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		if not shield.dirty then
 			shield.dirty = true
 			table_insert(shields_dirty, shield)
+			validate_self_bars(shield)
 			rendering.set_visible(shield.shield_bar, true)
 			rendering.set_visible(shield.shield_bar_bg, true)
 			rendering.set_visible(shield.shield_bar_buffer, true)
@@ -545,6 +555,34 @@ local function determineDimensions(entity)
 	return width, height
 end
 
+function validate_shielded_bars(data)
+	if not data.shield_bar_bg or not rendering.is_valid(data.shield_bar_bg) then
+		data.shield_bar_bg = rendering.draw_rectangle({
+			color = values.BACKGROUND_COLOR,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
+			right_bottom = data.unit,
+			right_bottom_offset = {data.width, data.height},
+		})
+	end
+
+	if not data.shield_bar or not rendering.is_valid(data.shield_bar) then
+		data.shield_bar = rendering.draw_rectangle({
+			color = values.SHIELD_COLOR,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
+			right_bottom = data.unit,
+			right_bottom_offset = {-data.width, data.height},
+		})
+	end
+end
+
 function bind_shield(entity, shield_provider, tick)
 	if not entity.destructible then return false end
 	local unit_number = entity.unit_number
@@ -575,29 +613,9 @@ function bind_shield(entity, shield_provider, tick)
 		height = height,
 
 		last_damage = tick,
-
-		shield_bar_bg = rendering.draw_rectangle({
-			color = values.BACKGROUND_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height - BAR_HEIGHT},
-			right_bottom = entity,
-			right_bottom_offset = {width, height},
-		}),
-
-		shield_bar = rendering.draw_rectangle({
-			color = values.SHIELD_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height - BAR_HEIGHT},
-			right_bottom = entity,
-			right_bottom_offset = {-width, height},
-		})
 	}
+
+	validate_shielded_bars(tracked_data)
 
 	-- tell globally that this entity has it's shield provider
 	-- which we can later lookup in shield_generators_hash[shield_provider.id]
@@ -624,6 +642,47 @@ local function rebind_shield(tracked_data, shield_provider)
 	return true
 end
 
+function validate_provider_bars(data)
+	if not data.battery_bar_bg or not rendering.is_valid(data.battery_bar_bg) then
+		data.battery_bar_bg = rendering.draw_rectangle({
+			color = values.BACKGROUND_COLOR,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
+			right_bottom = data.unit,
+			right_bottom_offset = {data.width, data.height},
+		})
+	end
+
+	if not data.battery_bar or not rendering.is_valid(data.battery_bar) then
+		data.battery_bar = rendering.draw_rectangle({
+			color = values.SHIELD_BUFF_COLOR,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
+			right_bottom = data.unit,
+			right_bottom_offset = {-data.width, data.height},
+		})
+	end
+
+	if not data.provider_radius or not rendering.is_valid(data.provider_radius) then
+		data.provider_radius = rendering.draw_circle({
+			color = values.SHIELD_RADIUS_COLOR,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			target = data.unit,
+			radius = RANGE_DEF[data.unit.name],
+			draw_on_ground = true,
+			only_in_alt_mode = true,
+		})
+	end
+end
+
 local function on_built_shield_provider(entity, tick)
 	if shield_generators_hash[entity.unit_number] then return end -- wut
 
@@ -647,42 +706,11 @@ local function on_built_shield_provider(entity, tick)
 		pos = entity.position,
 		range = RANGE_DEF[entity.name] * RANGE_DEF[entity.name],
 
-		battery_bar_bg = rendering.draw_rectangle({
-			color = values.BACKGROUND_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height - BAR_HEIGHT},
-			right_bottom = entity,
-			right_bottom_offset = {width, height},
-		}),
-
-		battery_bar = rendering.draw_rectangle({
-			color = values.SHIELD_BUFF_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height - BAR_HEIGHT},
-			right_bottom = entity,
-			right_bottom_offset = {-width, height},
-		}),
-
-		provider_radius = rendering.draw_circle({
-			color = values.SHIELD_RADIUS_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			target = entity,
-			radius = RANGE_DEF[entity.name],
-			draw_on_ground = true,
-			only_in_alt_mode = true,
-		}),
-
 		-- to be set to dynamic value later
 		max_energy = entity.electric_buffer_size,
 	}
+
+	validate_provider_bars(data)
 
 	table_insert(shield_generators, data)
 	shield_generators_hash[entity.unit_number] = data
@@ -768,6 +796,47 @@ local function on_built_shieldable_entity(entity, tick)
 	end
 end
 
+function validate_self_bars(data)
+	if not data.shield_bar_bg or not rendering.is_valid(data.shield_bar_bg) then
+		data.shield_bar_bg = rendering.draw_rectangle({
+			color = values.BACKGROUND_COLOR,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
+			right_bottom = data.unit,
+			right_bottom_offset = {data.width, data.height + BAR_HEIGHT},
+		})
+	end
+
+	if not data.shield_bar or not rendering.is_valid(data.shield_bar) then
+		data.shield_bar = rendering.draw_rectangle({
+			color = values.SHIELD_COLOR,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
+			right_bottom = data.unit,
+			right_bottom_offset = {-data.width, data.height},
+		})
+	end
+
+	if not data.shield_bar_buffer or not rendering.is_valid(data.shield_bar_buffer) then
+		data.shield_bar_buffer = rendering.draw_rectangle({
+			color = values.SHIELD_BUFF_COLOR,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height},
+			right_bottom = data.unit,
+			right_bottom_offset = {-data.width, data.height + BAR_HEIGHT},
+		})
+	end
+end
+
 local function on_built_shieldable_self(entity, tick)
 	local index = entity.unit_number
 	if shields[index] then return end -- wut
@@ -792,45 +861,14 @@ local function on_built_shieldable_self(entity, tick)
 
 		last_damage = tick,
 
-		shield_bar_bg = rendering.draw_rectangle({
-			color = values.BACKGROUND_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height - BAR_HEIGHT},
-			right_bottom = entity,
-			right_bottom_offset = {width, height + BAR_HEIGHT},
-		}),
-
-		shield_bar = rendering.draw_rectangle({
-			color = values.SHIELD_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height - BAR_HEIGHT},
-			right_bottom = entity,
-			right_bottom_offset = {-width, height},
-		}),
-
-		shield_bar_buffer = rendering.draw_rectangle({
-			color = values.SHIELD_BUFF_COLOR,
-			forces = {entity.force},
-			filled = true,
-			surface = entity.surface,
-			left_top = entity,
-			left_top_offset = {-width, height},
-			right_bottom = entity,
-			right_bottom_offset = {-width, height + BAR_HEIGHT},
-		}),
-
 		health = entity.health,
 		unit = entity,
 		id = index,
 
 		dirty = true
 	}
+
+	validate_self_bars(tracked_data)
 
 	tracked_data.shield.destructible = false
 	tracked_data.shield.minable = false
