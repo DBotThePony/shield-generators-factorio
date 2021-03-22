@@ -155,6 +155,16 @@ local validate_self_bars, validate_provider_bars, validate_shielded_bars
 
 local function mark_shield_dirty(shield_generator)
 	::MARK::
+
+	if not shield_generator.unit.valid then
+		-- shield somehow became invalid
+		-- ???
+
+		debug('provider ' .. shield_generator.id .. ' turned out to be invalid, this should never happen')
+		on_destroyed(shield_generator.id)
+		return
+	end
+
 	shield_generator.tracked_dirty = shield_generator.unit.energy < shield_generator.max_energy and {} or nil
 
 	local had_to_remove = false
