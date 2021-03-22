@@ -183,8 +183,18 @@ values._allowed_types = {
 	'infinity-container', -- editor specific
 }
 
+values.blacklist = {}
+
+values._blacklist = {
+	'tf-pole' -- tidy factory pole
+}
+
 for i, _type in ipairs(values._allowed_types) do
 	values.allowed_types[_type] = true
+end
+
+for i, _type in ipairs(values._blacklist) do
+	values.blacklist[_type] = true
 end
 
 for _type in pairs(values.allowed_types_self) do

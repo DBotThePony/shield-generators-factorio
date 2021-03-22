@@ -29,6 +29,10 @@ local basic_shield_provider = {
 	type = 'electric-energy-interface',
 	name = 'shield-generators-generator',
 
+	flags = {
+		'player-creation',
+	},
+
 	icon = '__base__/graphics/icons/beacon.png',
 	-- icon = '__base__/graphics/icons/energy-shield-equipment.png',
 	icon_size = 64,
@@ -642,6 +646,17 @@ do
 		type = 'electric-energy-interface',
 		name = 'shield-generators-interface-0',
 		localised_name = {'entity-name.shield-generators-interface'},
+
+		flags = {
+			'not-on-map',
+			'not-deconstructable',
+			'not-blueprintable',
+			'hidden',
+			'not-flammable',
+			'not-upgradable',
+			'not-in-kill-statistics',
+			'not-repairable',
+		},
 
 		icon = '__base__/graphics/icons/energy-shield-equipment.png',
 		icon_size = 64,

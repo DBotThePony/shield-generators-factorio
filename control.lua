@@ -225,7 +225,9 @@ local function mark_shield_dirty(shield_generator)
 		})
 
 		for i, ent in ipairs(found) do
-			bind_shield(ent, shield_generator)
+			if not values.blacklist[ent.name] then
+				bind_shield(ent, shield_generator)
+			end
 		end
 
 		goto MARK
@@ -735,7 +737,9 @@ local function on_built_shield_provider(entity, tick)
 	})
 
 	for i, ent in ipairs(found) do
-		bind_shield(ent, data, tick)
+		if not values.blacklist[ent.name] then
+			bind_shield(ent, data, tick)
+		end
 	end
 
 	bind_shield(entity, data, tick)
@@ -798,6 +802,8 @@ local function find_closest_provider(force, position, surface)
 end
 
 local function on_built_shieldable_entity(entity, tick)
+	if values.blacklist[entity.name] then return end
+
 	local provider_data = find_closest_provider(entity.force, entity.position, entity.surface)
 	if not provider_data then return end
 
