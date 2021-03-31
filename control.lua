@@ -1238,7 +1238,3 @@ script.on_event(defines.events.on_entity_destroyed, function(event)
 	on_destroyed(destroy_remap[event.registration_number])
 	destroy_remap[event.registration_number] = nil
 end)
-
-script.on_event(defines.events.on_entity_cloned, function(event)
-	debug('on clone')
-end)
