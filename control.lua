@@ -338,6 +338,7 @@ script.on_event(defines.events.on_tick, function(event)
 						end
 					else
 						debug('Encountered invalid unit with tracked index ' .. data.tracked_dirty[i2] .. ' in shield generator ' .. data.id)
+						check = true
 					end
 				end
 
@@ -376,8 +377,14 @@ script.on_event(defines.events.on_tick, function(event)
 				rendering.set_visible(data.battery_bar, false)
 
 				for i, tracked_data in ipairs(data.tracked) do
-					rendering.set_visible(tracked_data.shield_bar, false)
-					rendering.set_visible(tracked_data.shield_bar_bg, false)
+					if tracked_data.unit.valid then
+						validate_shielded_bars(tracked_data)
+						rendering.set_visible(tracked_data.shield_bar, false)
+						rendering.set_visible(tracked_data.shield_bar_bg, false)
+					else
+						mark_shield_dirty(data)
+						break
+					end
 				end
 			end
 		end
