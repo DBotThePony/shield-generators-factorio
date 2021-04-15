@@ -394,51 +394,60 @@ script.on_event(defines.events.on_tick, function(event)
 	for i = #shields_dirty, 1, -1 do
 		local tracked_data = shields_dirty[i]
 
-		local energy = tracked_data.shield.energy
+		if tracked_data.unit.valid and tracked_data.shield.valid then
+			local energy = tracked_data.shield.energy
 
-		if tracked_data.shield_health < tracked_data.max_health then
-			if energy > 0 then
-				local mult = 1
+			if tracked_data.shield_health < tracked_data.max_health then
+				if energy > 0 then
+					local mult = 1
 
-				-- first 1.5 seconds - base recharge rate
-				-- then linearly increase to triple speed
-				-- in next 3 seconds
-				if tracked_data.last_damage and tick - tracked_data.last_damage > 90 then
-					mult = math_min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
+					-- first 1.5 seconds - base recharge rate
+					-- then linearly increase to triple speed
+					-- in next 3 seconds
+					if tracked_data.last_damage and tick - tracked_data.last_damage > 90 then
+						mult = math_min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
+					end
+
+					local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name] * mult, tracked_data.max_health - tracked_data.shield_health)
+					tracked_data.shield_health = tracked_data.shield_health + delta
+					energy = energy - delta * CONSUMPTION_PER_HITPOINT
+					tracked_data.shield.energy = energy
+
+					if tracked_data.health ~= tracked_data.max_health then
+						-- update hacky health counter if required
+						tracked_data.health = tracked_data.unit.health
+					end
+
+					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+					_position[2] = tracked_data.height
+
+					rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+
+					_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
+					_position[2] = tracked_data.height + BAR_HEIGHT
+
+					rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
 				end
-
-				local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name] * mult, tracked_data.max_health - tracked_data.shield_health)
-				tracked_data.shield_health = tracked_data.shield_health + delta
-				energy = energy - delta * CONSUMPTION_PER_HITPOINT
-				tracked_data.shield.energy = energy
-
-				if tracked_data.health ~= tracked_data.max_health then
-					-- update hacky health counter if required
-					tracked_data.health = tracked_data.unit.health
-				end
-
-				_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
-				_position[2] = tracked_data.height
-
-				rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
-
+			elseif energy > 0 and energy < tracked_data.max_energy then
 				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
 				_position[2] = tracked_data.height + BAR_HEIGHT
 
 				rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
+			else
+				rendering.set_visible(tracked_data.shield_bar, false)
+				rendering.set_visible(tracked_data.shield_bar_bg, false)
+				rendering.set_visible(tracked_data.shield_bar_buffer, false)
+
+				tracked_data.dirty = false
+				table.remove(shields_dirty, i)
 			end
-		elseif energy > 0 and energy < tracked_data.max_energy then
-			_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
-			_position[2] = tracked_data.height + BAR_HEIGHT
-
-			rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
 		else
-			rendering.set_visible(tracked_data.shield_bar, false)
-			rendering.set_visible(tracked_data.shield_bar_bg, false)
-			rendering.set_visible(tracked_data.shield_bar_buffer, false)
+			debug('Late removal of self-shielded entity with id ' .. tracked_data.id)
+			on_destroyed(tracked_data.id)
 
-			tracked_data.dirty = false
-			table.remove(shields_dirty, i)
+			if shields_dirty[i] == tracked_data then
+				table.remove(shields_dirty, i)
+			end
 		end
 	end
 end)
@@ -981,6 +990,7 @@ local function refresh_sentry_shields(force)
 
 				if not tracked_data.dirty then
 					tracked_data.dirty = true
+					validate_self_bars(tracked_data)
 					shields_dirty[nextindex] = tracked_data
 					nextindex = nextindex + 1
 
@@ -999,6 +1009,7 @@ local function refresh_sentry_shields(force)
 
 					if not tracked_data.dirty then
 						tracked_data.dirty = true
+						validate_self_bars(tracked_data)
 						shields_dirty[nextindex] = tracked_data
 						nextindex = nextindex + 1
 
