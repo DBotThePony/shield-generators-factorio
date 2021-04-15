@@ -953,6 +953,10 @@ script.on_event(defines.events.script_raised_built, function(event)
 	on_built(event.entity, event.tick)
 end)
 
+script.on_event(defines.events.script_raised_revive, function(event)
+	on_built(event.entity, event.tick)
+end)
+
 script.on_event(defines.events.on_robot_built_entity, function(event)
 	on_built(event.created_entity, event.tick)
 end)
