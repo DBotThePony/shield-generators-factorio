@@ -147,7 +147,7 @@ script.on_load(function()
 end)
 
 local function debug(str)
-	game.print('[Shield Generators] ' .. str)
+	game.print('[Shield Generators] Reported managed error: ' .. str)
 	log(str)
 end
 
@@ -160,7 +160,7 @@ local function mark_shield_dirty(shield_generator)
 		-- shield somehow became invalid
 		-- ???
 
-		debug('provider ' .. shield_generator.id .. ' turned out to be invalid, this should never happen')
+		debug('Provider ' .. shield_generator.id .. ' turned out to be invalid, this should never happen')
 		on_destroyed(shield_generator.id)
 		return
 	end
