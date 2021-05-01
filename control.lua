@@ -146,9 +146,9 @@ script.on_load(function()
 	reload_values()
 end)
 
-local function debug(str)
-	game.print('[Shield Generators] Reported managed error: ' .. str)
-	log(str)
+local function report_error(str)
+	-- game.print('[Shield Generators] Reported managed error: ' .. str)
+	log('Reporting managed error: ' .. str)
 end
 
 local validate_self_bars, validate_provider_bars, validate_shielded_bars
@@ -160,7 +160,7 @@ local function mark_shield_dirty(shield_generator)
 		-- shield somehow became invalid
 		-- ???
 
-		debug('Provider ' .. shield_generator.id .. ' turned out to be invalid, this should never happen')
+		report_error('Provider ' .. shield_generator.id .. ' turned out to be invalid, this should never happen')
 		on_destroyed(shield_generator.id)
 		return
 	end
@@ -337,7 +337,7 @@ script.on_event(defines.events.on_tick, function(event)
 							tracked_data.dirty = false
 						end
 					else
-						debug('Encountered invalid unit with tracked index ' .. data.tracked_dirty[i2] .. ' in shield generator ' .. data.id)
+						report_error('Encountered invalid unit with tracked index ' .. data.tracked_dirty[i2] .. ' in shield generator ' .. data.id)
 						check = true
 					end
 				end
@@ -357,7 +357,7 @@ script.on_event(defines.events.on_tick, function(event)
 
 			data.unit.energy = energy
 		else
-			-- debug('Encountered invalid shield provider with index ' .. data.id)
+			-- report_error('Encountered invalid shield provider with index ' .. data.id)
 			check = true
 		end
 	end
@@ -442,7 +442,7 @@ script.on_event(defines.events.on_tick, function(event)
 				table.remove(shields_dirty, i)
 			end
 		else
-			debug('Late removal of self-shielded entity with id ' .. tracked_data.id)
+			report_error('Late removal of self-shielded entity with id ' .. tracked_data.id)
 			on_destroyed(tracked_data.id)
 
 			if shields_dirty[i] == tracked_data then
@@ -506,10 +506,10 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 					rendering.set_visible(tracked_data.shield_bar_bg, true)
 				end
 			else
-				debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
+				report_error('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
 			end
 		else
-			debug('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generators_bound[unit_number] .. ', but this generator is invalid!')
+			report_error('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generators_bound[unit_number] .. ', but this generator is invalid!')
 		end
 	end
 
@@ -655,8 +655,6 @@ function bind_shield(entity, shield_provider, tick)
 
 	destroy_remap[script.register_on_entity_destroyed(entity)] = unit_number
 
-	-- debug('Bound entity ' .. unit_number .. ' to shield generator ' .. shield_provider.id .. ' with max health of ' .. tracked_data.max_health)
-
 	return true
 end
 
@@ -742,7 +740,6 @@ local function on_built_shield_provider(entity, tick)
 
 	table_insert(shield_generators, data)
 	shield_generators_hash[entity.unit_number] = data
-	-- debug('Shield placed with index ' .. entity.unit_number .. ' and index ' .. shield_generators_hash[entity.unit_number])
 
 	-- find buildings around already placed
 	local found = entity.surface.find_entities_filtered({
@@ -990,8 +987,6 @@ local function refresh_sentry_shields(force)
 
 				shield.energy = energy
 
-				-- debug('Recreated shield ' .. shield.unit_number .. ' for ' .. tracked_data.unit.unit_number)
-
 				if not tracked_data.dirty then
 					tracked_data.dirty = true
 					validate_self_bars(tracked_data)
@@ -1008,8 +1003,6 @@ local function refresh_sentry_shields(force)
 				if iface then
 					tracked_data.shield.electric_buffer_size = iface.buffer_capacity * modif
 					tracked_data.max_energy = tracked_data.shield.electric_buffer_size - 1
-
-					-- debug('Updated shield ' .. tracked_data.shield.unit_number)
 
 					if not tracked_data.dirty then
 						tracked_data.dirty = true
@@ -1060,12 +1053,10 @@ script.on_event(defines.events.on_research_finished, function(event)
 	end
 
 	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
-		-- debug('rebuild cache')
 		rebuild_cache()
 	end
 
 	if values.SENTRY_REBUILD_TRIGGERS[event.research.name] then
-		-- debug('recreate shields')
 		refresh_sentry_shields(event.research.force)
 	end
 end)
@@ -1104,12 +1095,10 @@ script.on_event(defines.events.on_research_reversed, function(event)
 	end
 
 	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
-		-- debug('rebuild cache')
 		rebuild_cache()
 	end
 
 	if values.SENTRY_REBUILD_TRIGGERS[event.research.name] then
-		-- debug('recreate shields')
 		refresh_sentry_shields(event.research.force)
 	end
 end)
@@ -1202,14 +1191,9 @@ function on_destroyed(index, from_dirty)
 	elseif shield_generators_bound[index] then -- entity under shield generator destroyed
 		local shield_generator = shield_generators_hash[shield_generators_bound[index]]
 
-		-- debug('Removing entity ' .. index .. ' from tracked!')
-
 		if shield_generator then
 			-- we got our shield generator data
 			-- let's remove us from tracked entities
-
-			-- debug('Removing entity ' .. index .. ' from tracked of ' .. shield_generator.id .. '!')
-
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
 
 			rendering.destroy(tracked_data.shield_bar_bg)
@@ -1256,7 +1240,6 @@ end
 
 script.on_event(defines.events.on_entity_destroyed, function(event)
 	if not destroy_remap[event.registration_number] then return end
-	-- debug('DESTROY ' .. destroy_remap[event.registration_number])
 	on_destroyed(destroy_remap[event.registration_number])
 	destroy_remap[event.registration_number] = nil
 end)
