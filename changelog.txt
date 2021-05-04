@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 04. 05. 2021
+  Changes:
+    - Mark self shields as placeable-off-grid. This might break existing blueprints, so it is marked as 0.1.0
+
+---------------------------------------------------------------------------------------------------
 Version: 0.0.15
 Date: 04. 05. 2021
   Changes:

@@ -656,6 +656,7 @@ do
 			'not-upgradable',
 			'not-in-kill-statistics',
 			'not-repairable',
+			'placeable-off-grid',
 		},
 
 		icon = '__base__/graphics/icons/energy-shield-equipment.png',
