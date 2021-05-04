@@ -19,6 +19,10 @@
 -- DEALINGS IN THE SOFTWARE.
 
 local shields, shields_dirty, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
+-- shield entity -> entity it protect map
+local shield_to_self_map
+-- hash table to hold
+local lazy_unconnected_self_iter
 local on_destroyed, bind_shield
 
 local speed_cache, turret_speed_cache
@@ -97,6 +101,8 @@ script.on_init(function()
 	shield_generators_bound = global.shield_generators_bound
 	shield_generators = global.shield_generators
 	shield_generators_hash = {}
+	shield_to_self_map = {}
+	lazy_unconnected_self_iter = {}
 
 	shield_generators_dirty = {}
 	shields_dirty = {}
@@ -121,6 +127,8 @@ script.on_load(function()
 	shield_generators_dirty = {}
 	shields_dirty = {}
 	shield_generators_hash = {}
+	-- shield_to_self_map = {}
+	-- lazy_unconnected_self_iter = {}
 
 	-- build dirty list from savegame
 	for i = 1, #shield_generators do
@@ -135,9 +143,9 @@ script.on_load(function()
 
 	local nextindex = 1
 
+	-- build dirty list for self shielding entities from savegame
 	for unumber, data in pairs(shields) do
-		if data.shield_health < data.max_health or data.shield.energy < data.max_energy then
-			data.dirty = true
+		if data.dirty or data.shield_health < data.max_health or data.shield.energy < data.max_energy then
 			shields_dirty[nextindex] = data
 			nextindex = nextindex + 1
 		end
@@ -145,6 +153,23 @@ script.on_load(function()
 
 	reload_values()
 end)
+
+local function fill_shield_to_self_map()
+	shield_to_self_map = {}
+	lazy_unconnected_self_iter = {}
+
+	for unumber, data in pairs(shields) do
+		if data.shield.valid then
+			shield_to_self_map[data.shield.unit_number] = data
+		end
+
+		--[[
+		if not data.shield.is_connected_to_electric_network() then
+			lazy_unconnected_self_iter[unumber] = data
+		end
+		]]
+	end
+end
 
 local function report_error(str)
 	-- game.print('[Shield Generators] Reported managed error: ' .. str)
@@ -276,6 +301,12 @@ script.on_event(defines.events.on_tick, function(event)
 		rebuild_cache()
 	end
 
+	-- since inside on_load LuaEntities are invalid
+	-- we have to do this on next game tick
+	if not shield_to_self_map then
+		fill_shield_to_self_map()
+	end
+
 	local check = false
 	local tick = event.tick
 
@@ -390,6 +421,35 @@ script.on_event(defines.events.on_tick, function(event)
 		end
 	end
 
+	local _value
+
+	for i = 1, 5 do
+		-- use lazy_key globally to be deterministic in multiplayer
+		global.lazy_key, _value = next(lazy_unconnected_self_iter, global.lazy_key)
+
+		if not _value then
+			global.lazy_key, _value = next(lazy_unconnected_self_iter)
+		end
+
+		if _value then
+			local _shield = _value.shield
+
+			if _shield.valid then
+				if _shield.is_connected_to_electric_network() then
+					_value.dirty = true
+					table_insert(shields_dirty, _value)
+					lazy_unconnected_self_iter[global.lazy_key] = nil
+					-- global.lazy_key = nil
+				end
+			else
+				lazy_unconnected_self_iter[global.lazy_key] = nil
+				-- global.lazy_key = nil
+			end
+		else
+			break
+		end
+	end
+
 	-- iterate dirty self shields
 	for i = #shields_dirty, 1, -1 do
 		local tracked_data = shields_dirty[i]
@@ -427,12 +487,35 @@ script.on_event(defines.events.on_tick, function(event)
 					_position[2] = tracked_data.height + BAR_HEIGHT
 
 					rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
+				elseif not tracked_data.shield.is_connected_to_electric_network() then
+					-- update bars before untracking
+					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+					_position[2] = tracked_data.height
+
+					rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+
+					_position[1] = -tracked_data.width
+					_position[2] = tracked_data.height + BAR_HEIGHT
+
+					rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
+
+					-- remove shield from dirty list if energy empty and is not connected to any power network
+					tracked_data.dirty = false
+					table.remove(shields_dirty, i)
+					lazy_unconnected_self_iter[tracked_data.id] = tracked_data
 				end
 			elseif energy > 0 and energy < tracked_data.max_energy then
 				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
 				_position[2] = tracked_data.height + BAR_HEIGHT
 
 				rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
+
+				if not tracked_data.shield.is_connected_to_electric_network() then
+					-- remove shield from dirty list if energy half-full/empty and is not connected to any power network
+					tracked_data.dirty = false
+					table.remove(shields_dirty, i)
+					lazy_unconnected_self_iter[tracked_data.id] = tracked_data
+				end
 			else
 				rendering.set_visible(tracked_data.shield_bar, false)
 				rendering.set_visible(tracked_data.shield_bar_bg, false)
@@ -453,10 +536,10 @@ script.on_event(defines.events.on_tick, function(event)
 end)
 
 script.on_event(defines.events.on_entity_damaged, function(event)
-	local entity, damage_type, original_damage_amount, final_damage_amount, final_health, cause, force = event.entity, event.damage_type, event.original_damage_amount, event.final_damage_amount, event.final_health, event.cause, event.force
+	local entity, final_damage_amount = event.entity, event.final_damage_amount
+	local final_health
 
 	local unit_number = entity.unit_number
-	local shield = shields[unit_number]
 
 	-- bound shield generator provider
 	-- process is before internal shield
@@ -475,7 +558,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				if shield_health >= final_damage_amount then
 					-- HACK HACK HACK
 					-- we have no idea how to determine old health in this case
-					if final_health == 0 then
+					if event.final_health == 0 then
 						entity.health = tracked_data.health
 					else
 						entity.health = entity.health + final_damage_amount
@@ -522,6 +605,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		return
 	end
 
+	local shield = shields[unit_number]
+
 	-- internal shield
 	if shield then
 		local shield_health = shield.shield_health
@@ -532,6 +617,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		if shield_health >= final_damage_amount then
 			-- HACK HACK HACK
 			-- we have no idea how to determine old health in this case
+			final_health = final_health or event.final_health
+
 			if final_health == 0 then
 				entity.health = shield.health
 			else
@@ -549,6 +636,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		if not shield.dirty then
 			shield.dirty = true
 			table_insert(shields_dirty, shield)
+			lazy_unconnected_self_iter[unit_number] = nil
 			validate_self_bars(shield)
 			rendering.set_visible(shield.shield_bar, true)
 			rendering.set_visible(shield.shield_bar_bg, true)
@@ -908,6 +996,12 @@ local function on_built_shieldable_self(entity, tick)
 	shields[index] = tracked_data
 	table_insert(shields_dirty, tracked_data)
 
+	if not shield_to_self_map then
+		fill_shield_to_self_map()
+	end
+
+	shield_to_self_map[tracked_data.shield.unit_number] = tracked_data
+
 	-- case: we got self shield after getting shield from shield provider
 	-- update bars for them to not overlap with ours
 	if shield_generators_bound[index] then -- entity under shield generator destroyed
@@ -929,15 +1023,49 @@ end
 local function on_built(created_entity, tick)
 	if RANGE_DEF[created_entity.name] then
 		on_built_shield_provider(created_entity, tick)
-	else
-		if values.allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
-			-- create turret shield first
-			on_built_shieldable_self(created_entity, tick)
+		return
+	end
+
+	if values.allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
+		-- create turret shield first
+		on_built_shieldable_self(created_entity, tick)
+	end
+
+	if values.allowed_types[created_entity.type] then
+		-- create provider shield second
+		on_built_shieldable_entity(created_entity, tick)
+	end
+
+	-- check for poles
+	if created_entity.type == 'electric-pole' then
+		local pos = created_entity.position
+		local area = created_entity.prototype.supply_area_distance
+
+		-- find any self shield in pole area
+		local found = created_entity.surface.find_entities_filtered({
+			area = {
+				{x = pos.x - area, y = pos.y - area},
+				{x = pos.x + area, y = pos.y + area},
+			},
+
+			force = created_entity.force,
+			name = values.SELF_GENERATORS
+		})
+
+		if not shield_to_self_map then
+			fill_shield_to_self_map()
 		end
 
-		if values.allowed_types[created_entity.type] then
-			-- create provider shield second
-			on_built_shieldable_entity(created_entity, tick)
+		for i, ent in ipairs(found) do
+			local tracked_data = shield_to_self_map[ent.unit_number]
+
+			-- if we hit a self-shield that is idle and not energy full, wake it up
+			if tracked_data and not tracked_data.dirty and tracked_data.unit.valid and ent.energy ~= tracked_data.max_energy then
+				tracked_data.dirty = true
+				table_insert(shields_dirty, tracked_data)
+				lazy_unconnected_self_iter[tracked_data.id] = nil
+				validate_self_bars(tracked_data)
+			end
 		end
 	end
 end
@@ -1124,6 +1252,19 @@ function on_destroyed(index, from_dirty)
 	if shields[index] then
 		local tracked_data = shields[index]
 
+		if tracked_data.shield then
+			shield_to_self_map[tracked_data.shield.unit_number] = nil
+		else
+			report_error('Unexpected self shield deletion of now deleted unit ' .. index .. '. Getting around it is slow!')
+
+			for key, value  in pairs(shield_to_self_map) do
+				if value == tracked_data then
+					shield_to_self_map[key] = nil
+					break
+				end
+			end
+		end
+
 		tracked_data.shield.destroy()
 		rendering.destroy(tracked_data.shield_bar_bg)
 		rendering.destroy(tracked_data.shield_bar)
@@ -1137,6 +1278,7 @@ function on_destroyed(index, from_dirty)
 			end
 		end
 
+		lazy_unconnected_self_iter[index] = nil
 		shields[index] = nil
 	end
 

@@ -39,6 +39,7 @@ values.GENERATORS = {
 	'shield-generators-generator-ultimate',
 }
 
+
 values.TURRET_SHIELD_CAPACITY_RESEARCH = {
 	{15, {}, 100, 30},
 	{25, {{'military-3', false}}, 150, 30},
@@ -59,6 +60,14 @@ values.TURRET_SHIELD_INPUT_RESEARCH = {
 
 	{65, {{'space-science-pack', true}}, 1500, 60}, -- final level
 }
+
+values.SELF_GENERATORS = {
+	'shield-generators-interface-0'
+}
+
+for i, data in ipairs(values.TURRET_SHIELD_INPUT_RESEARCH) do
+	table.insert(values.SELF_GENERATORS, 'shield-generators-interface-' .. i)
+end
 
 values.TURRET_SHIELD_SPEED_RESEARCH = {
 	{25, {}, 300, 30},
