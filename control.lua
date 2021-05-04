@@ -163,11 +163,9 @@ local function fill_shield_to_self_map()
 			shield_to_self_map[data.shield.unit_number] = data
 		end
 
-		--[[
 		if not data.shield.is_connected_to_electric_network() then
 			lazy_unconnected_self_iter[unumber] = data
 		end
-		]]
 	end
 end
 
@@ -424,6 +422,13 @@ script.on_event(defines.events.on_tick, function(event)
 	local _value
 
 	for i = 1, 5 do
+		-- it is not known whenever is it fully deterministic
+		-- since this table is assembled on each map load
+		-- and it's internal order might mess up
+		if not lazy_unconnected_self_iter[global.lazy_key] then
+			global.lazy_key = nil
+		end
+
 		-- use lazy_key globally to be deterministic in multiplayer
 		global.lazy_key, _value = next(lazy_unconnected_self_iter, global.lazy_key)
 
