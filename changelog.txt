@@ -1,5 +1,5 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.2.0
+Version: 0.1.2
 Date: 05. 05. 2021
   Changes:
     - Fix recharge speed increase (from 1.5s delay + 6s increase to 1.5s delay + 3s increase)
