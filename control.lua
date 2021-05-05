@@ -45,6 +45,12 @@ local function table_insert(tab, value)
 	return insert
 end
 
+local function lerp(t, a, b)
+	if t < 0 then return a end
+	if t >= 1 then return b end
+	return a + (b - a) * t
+end
+
 local RANGE_DEF = {}
 local SEARCH_RANGE
 
@@ -308,6 +314,10 @@ script.on_event(defines.events.on_tick, function(event)
 	local check = false
 	local tick = event.tick
 
+	local delay = settings.global['shield-generators-delay'].value * 60
+	local max_time = settings.global['shield-generators-max-time'].value * 60
+	local max_speed = settings.global['shield-generators-max-speed'].value
+
 	-- iterate dirty shield providers
 	for i = 1, #shield_generators_dirty do
 		local data = shield_generators_dirty[i]
@@ -343,8 +353,8 @@ script.on_event(defines.events.on_tick, function(event)
 							-- first 1.5 seconds - base recharge rate
 							-- then linearly increase to triple speed
 							-- in next 3 seconds
-							if tracked_data.last_damage and tick - tracked_data.last_damage > 90 then
-								mult = math_min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
+							if tracked_data.last_damage and tick - tracked_data.last_damage > delay then
+								mult = lerp((tick - tracked_data.last_damage - delay) / max_time, 1, max_speed)
 							end
 
 							local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick * mult, tracked_data.max_health - tracked_data.shield_health)
@@ -470,7 +480,7 @@ script.on_event(defines.events.on_tick, function(event)
 					-- then linearly increase to triple speed
 					-- in next 3 seconds
 					if tracked_data.last_damage and tick - tracked_data.last_damage > 90 then
-						mult = math_min(3, 1 + (tick - tracked_data.last_damage - 90) / 180)
+						mult = lerp((tick - tracked_data.last_damage - delay) / max_time, 1, max_speed)
 					end
 
 					local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name] * mult, tracked_data.max_health - tracked_data.shield_health)

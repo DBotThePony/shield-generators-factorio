@@ -25,6 +25,7 @@ data:extend({
 		setting_type = 'startup',
 		default_value = 20000,
 		minimum_value = 1,
+		order = 'a',
 	},
 
 	{
@@ -32,7 +33,8 @@ data:extend({
 		name = 'shield-generators-hitpoints-base-rate-turret',
 		setting_type = 'runtime-global',
 		default_value = 10,
-		minimum_value = 1
+		minimum_value = 1,
+		order = 'aa',
 	},
 
 	{
@@ -40,7 +42,8 @@ data:extend({
 		name = 'shield-generators-hitpoints-base-rate-provider',
 		setting_type = 'runtime-global',
 		default_value = 15,
-		minimum_value = 1
+		minimum_value = 1,
+		order = 'ab',
 	},
 
 	{
@@ -48,7 +51,8 @@ data:extend({
 		name = 'shield-generators-turret-charge-base-capacity',
 		setting_type = 'startup',
 		default_value = 400,
-		minimum_value = 1
+		minimum_value = 1,
+		order = 'ac',
 	},
 
 	{
@@ -56,7 +60,8 @@ data:extend({
 		name = 'shield-generators-provider-capacity',
 		setting_type = 'runtime-global',
 		default_value = 1,
-		minimum_value = 0.01
+		minimum_value = 0.01,
+		order = 'ad',
 	},
 
 	{
@@ -64,7 +69,8 @@ data:extend({
 		name = 'shield-generators-provider-range-basic',
 		setting_type = 'runtime-global',
 		default_value = 16,
-		minimum_value = 1
+		minimum_value = 1,
+		order = 'ba',
 	},
 
 	{
@@ -72,7 +78,8 @@ data:extend({
 		name = 'shield-generators-provider-range-advanced',
 		setting_type = 'runtime-global',
 		default_value = 32,
-		minimum_value = 1
+		minimum_value = 1,
+		order = 'bb',
 	},
 
 	{
@@ -80,7 +87,8 @@ data:extend({
 		name = 'shield-generators-provider-range-elite',
 		setting_type = 'runtime-global',
 		default_value = 64,
-		minimum_value = 1
+		minimum_value = 1,
+		order = 'bc',
 	},
 
 	{
@@ -88,6 +96,37 @@ data:extend({
 		name = 'shield-generators-provider-range-ultimate',
 		setting_type = 'runtime-global',
 		default_value = 128,
-		minimum_value = 1
+		minimum_value = 1,
+		order = 'bd',
+	},
+
+	{
+		type = 'double-setting',
+		name = 'shield-generators-delay',
+		localised_description = {'mod-setting-description.shield-generators-delay'},
+		setting_type = 'runtime-global',
+		default_value = 2,
+		minimum_value = 0.01,
+		order = 'ca',
+	},
+
+	{
+		type = 'double-setting',
+		name = 'shield-generators-max-time',
+		localised_description = {'mod-setting-description.shield-generators-max-time'},
+		setting_type = 'runtime-global',
+		default_value = 3,
+		minimum_value = 0.01,
+		order = 'cb',
+	},
+
+	{
+		type = 'double-setting',
+		name = 'shield-generators-max-speed',
+		localised_description = {'mod-setting-description.shield-generators-max-speed'},
+		setting_type = 'runtime-global',
+		default_value = 3,
+		minimum_value = 1,
+		order = 'cc',
 	},
 })

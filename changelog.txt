@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.0
+Date: 05. 05. 2021
+  Changes:
+    - Fix recharge speed increase (from 1.5s delay + 6s increase to 1.5s delay + 3s increase)
+    - Make recharge speed configurable
+    - Change default recharge speed values
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.1
 Date: 04. 05. 2021
   Changes:
