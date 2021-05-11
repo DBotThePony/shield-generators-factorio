@@ -96,30 +96,7 @@ local function reload_values()
 	rebuild_cache()
 end
 
-script.on_init(function()
-	global.shields = {}
-	global.destroy_remap = {}
-	global.shield_generators_bound = {}
-	global.shield_generators = {}
-
-	shields = global.shields
-	destroy_remap = global.destroy_remap
-	shield_generators_bound = global.shield_generators_bound
-	shield_generators = global.shield_generators
-	shield_generators_hash = {}
-	shield_to_self_map = {}
-	lazy_unconnected_self_iter = {}
-
-	shield_generators_dirty = {}
-	shields_dirty = {}
-
-	reload_values()
-end)
-
-script.on_configuration_changed(reload_values)
-script.on_event(defines.events.on_runtime_mod_setting_changed, reload_values)
-
-script.on_load(function()
+script.on_configuration_changed(function()
 	global.shields = global.shields or {}
 	global.destroy_remap = global.destroy_remap or {}
 	global.shield_generators_bound = global.shield_generators_bound or {}
@@ -129,12 +106,60 @@ script.on_load(function()
 	destroy_remap = global.destroy_remap
 	shield_generators_bound = global.shield_generators_bound
 	shield_generators = global.shield_generators
+	lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
+
+	if not lazy_unconnected_self_iter then
+		global.lazy_unconnected_self_iter = {}
+		lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
+
+		for unumber, data in pairs(shields) do
+			if not data.shield.is_connected_to_electric_network() then
+				lazy_unconnected_self_iter[unumber] = true
+			end
+		end
+	end
+
+	reload_values()
+end)
+
+script.on_init(function()
+	global.shields = {}
+	global.destroy_remap = {}
+	global.shield_generators_bound = {}
+	global.shield_generators = {}
+	global.lazy_unconnected_self_iter = {}
+
+	shields = global.shields
+	destroy_remap = global.destroy_remap
+	shield_generators_bound = global.shield_generators_bound
+	shield_generators = global.shield_generators
+	lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
+
+	shield_generators_hash = {}
+	shield_to_self_map = {}
+
+	shield_generators_dirty = {}
+	shields_dirty = {}
+
+	reload_values()
+end)
+
+script.on_event(defines.events.on_runtime_mod_setting_changed, reload_values)
+
+script.on_load(function()
+	-- i could assert these, but
+	-- on_configuration_changed is executed *after* on_load
+	-- meaning migrations are not yet applied
+	shields = global.shields
+	destroy_remap = global.destroy_remap
+	shield_generators_bound = global.shield_generators_bound
+	shield_generators = global.shield_generators
+	lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
 
 	shield_generators_dirty = {}
 	shields_dirty = {}
 	shield_generators_hash = {}
 	-- shield_to_self_map = {}
-	-- lazy_unconnected_self_iter = {}
 
 	-- build dirty list from savegame
 	for i = 1, #shield_generators do
@@ -162,15 +187,10 @@ end)
 
 local function fill_shield_to_self_map()
 	shield_to_self_map = {}
-	lazy_unconnected_self_iter = {}
 
 	for unumber, data in pairs(shields) do
 		if data.shield.valid then
 			shield_to_self_map[data.shield.unit_number] = data
-		end
-
-		if not data.shield.is_connected_to_electric_network() then
-			lazy_unconnected_self_iter[unumber] = data
 		end
 	end
 end
@@ -432,14 +452,10 @@ script.on_event(defines.events.on_tick, function(event)
 	local _value
 
 	for i = 1, 5 do
-		-- it is not known whenever is it fully deterministic
-		-- since this table is assembled on each map load
-		-- and it's internal order might mess up
-		if not lazy_unconnected_self_iter[global.lazy_key] then
+		if global.lazy_key ~= nil and not lazy_unconnected_self_iter[global.lazy_key] then
 			global.lazy_key = nil
 		end
 
-		-- use lazy_key globally to be deterministic in multiplayer
 		global.lazy_key, _value = next(lazy_unconnected_self_iter, global.lazy_key)
 
 		if not _value then
@@ -447,18 +463,27 @@ script.on_event(defines.events.on_tick, function(event)
 		end
 
 		if _value then
-			local _shield = _value.shield
+			local _data = shields[global.lazy_key]
 
-			if _shield.valid then
-				if _shield.is_connected_to_electric_network() then
-					_value.dirty = true
-					table_insert(shields_dirty, _value)
+			if _data then
+				local _shield = _data.shield
+
+				if _shield.valid then
+					if _shield.is_connected_to_electric_network() then
+						_data.dirty = true
+						table_insert(shields_dirty, _data)
+						lazy_unconnected_self_iter[global.lazy_key] = nil
+						-- global.lazy_key = nil
+					end
+				else
 					lazy_unconnected_self_iter[global.lazy_key] = nil
 					-- global.lazy_key = nil
+					break
 				end
 			else
 				lazy_unconnected_self_iter[global.lazy_key] = nil
-				-- global.lazy_key = nil
+				global.lazy_key = nil
+				break
 			end
 		else
 			break
@@ -517,7 +542,7 @@ script.on_event(defines.events.on_tick, function(event)
 					-- remove shield from dirty list if energy empty and is not connected to any power network
 					tracked_data.dirty = false
 					table.remove(shields_dirty, i)
-					lazy_unconnected_self_iter[tracked_data.id] = tracked_data
+					lazy_unconnected_self_iter[tracked_data.id] = true
 				end
 			elseif energy > 0 and energy < tracked_data.max_energy then
 				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
@@ -529,7 +554,7 @@ script.on_event(defines.events.on_tick, function(event)
 					-- remove shield from dirty list if energy half-full/empty and is not connected to any power network
 					tracked_data.dirty = false
 					table.remove(shields_dirty, i)
-					lazy_unconnected_self_iter[tracked_data.id] = tracked_data
+					lazy_unconnected_self_iter[tracked_data.id] = true
 				end
 			else
 				rendering.set_visible(tracked_data.shield_bar, false)
