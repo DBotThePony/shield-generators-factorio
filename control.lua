@@ -1385,8 +1385,8 @@ function on_destroyed(index, from_dirty)
 		end
 
 		tracked_data.shield.destroy()
-		rendering.destroy(tracked_data.shield_bar_bg)
-		rendering.destroy(tracked_data.shield_bar)
+
+		destroy_self_bars(tracked_data)
 
 		if tracked_data.dirty then
 			for i = 1, #shields_dirty do
@@ -1428,8 +1428,7 @@ function on_destroyed(index, from_dirty)
 					shield_generators_bound[tracked_data.unit_number] = nil
 				end
 
-				rendering.destroy(tracked_data.shield_bar_bg)
-				rendering.destroy(tracked_data.shield_bar)
+				destroy_shielded_bars(tracked_data)
 			end
 		end
 
@@ -1445,8 +1444,7 @@ function on_destroyed(index, from_dirty)
 			end
 		end
 
-		rendering.destroy(data.battery_bar_bg)
-		rendering.destroy(data.battery_bar)
+		destroy_provider_bars(data)
 
 		shield_generators_hash[index] = nil
 	elseif shield_generators_bound[index] then -- entity under shield generator destroyed
@@ -1457,8 +1455,7 @@ function on_destroyed(index, from_dirty)
 			-- let's remove us from tracked entities
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
 
-			rendering.destroy(tracked_data.shield_bar_bg)
-			rendering.destroy(tracked_data.shield_bar)
+			destroy_shielded_bars(tracked_data)
 
 			local oindex = shield_generator.tracked_hash[index]
 			table.remove(shield_generator.tracked, shield_generator.tracked_hash[index])
