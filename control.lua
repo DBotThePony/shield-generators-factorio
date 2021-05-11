@@ -96,6 +96,9 @@ local function reload_values()
 	rebuild_cache()
 end
 
+local validate_self_bars, validate_provider_bars, validate_shielded_bars
+local destroy_self_bars, destroy_provider_bars, destroy_shielded_bars
+
 script.on_configuration_changed(function()
 	global.shields = global.shields or {}
 	global.destroy_remap = global.destroy_remap or {}
@@ -120,6 +123,30 @@ script.on_configuration_changed(function()
 	end
 
 	reload_values()
+
+	if not global.migrated_98277 then
+		for _, data in pairs(shield_generators) do
+			if not data.tracked_dirty then
+				destroy_provider_bars(data)
+			end
+
+			if data.tracked then
+				for i, tracked_data in ipairs(data.tracked) do
+					if not tracked_data.dirty then
+						destroy_shielded_bars(tracked_data)
+					end
+				end
+			end
+		end
+
+		for unumber, tracked_data in pairs(shields) do
+			if not tracked_data.dirty and tracked_data.shield.valid and tracked_data.shield.is_connected_to_electric_network() then
+				destroy_self_bars(tracked_data)
+			end
+		end
+
+		global.migrated_98277 = true
+	end
 end)
 
 script.on_init(function()
@@ -128,6 +155,8 @@ script.on_init(function()
 	global.shield_generators_bound = {}
 	global.shield_generators = {}
 	global.lazy_unconnected_self_iter = {}
+
+	global.migrated_98277 = true
 
 	shields = global.shields
 	destroy_remap = global.destroy_remap
@@ -200,8 +229,6 @@ local function report_error(str)
 	log('Reporting managed error: ' .. str)
 end
 
-local validate_self_bars, validate_provider_bars, validate_shielded_bars
-
 local function mark_shield_dirty(shield_generator)
 	::MARK::
 
@@ -243,17 +270,21 @@ local function mark_shield_dirty(shield_generator)
 				tracked_data.dirty = true
 				table_insert(shield_generator.tracked_dirty, i)
 
-				if rendering.is_valid(tracked_data.shield_bar) then
+				--[[if rendering.is_valid(tracked_data.shield_bar) then
 					rendering.set_visible(tracked_data.shield_bar, true)
 					rendering.set_visible(tracked_data.shield_bar_bg, true)
-				end
+				end]]
+
+				destroy_shielded_bars(tracked_data)
 
 				i = i + 1
 			elseif tracked_data.dirty then
-				if rendering.is_valid(tracked_data.shield_bar) then
+				--[[if rendering.is_valid(tracked_data.shield_bar) then
 					rendering.set_visible(tracked_data.shield_bar, false)
 					rendering.set_visible(tracked_data.shield_bar_bg, false)
-				end
+				end]]
+
+				destroy_shielded_bars(tracked_data)
 
 				i = i + 1
 			else
@@ -282,15 +313,15 @@ local function mark_shield_dirty(shield_generator)
 		goto MARK
 	end
 
-	validate_provider_bars(shield_generator)
-
 	-- if we are dirty, let's tick
 	if shield_generator.tracked_dirty then
+		validate_provider_bars(shield_generator)
+
 		rendering.set_visible(shield_generator.battery_bar_bg, true)
 		rendering.set_visible(shield_generator.battery_bar, true)
 
-		for i, tracked_data in ipairs(shield_generator.tracked) do
-			validate_shielded_bars(tracked_data)
+		for i, _index in ipairs(shield_generator.tracked_dirty) do
+			validate_shielded_bars(shield_generator.tracked[_index])
 		end
 
 		local hit = false
@@ -306,8 +337,10 @@ local function mark_shield_dirty(shield_generator)
 			table_insert(shield_generators_dirty, shield_generator)
 		end
 	else
-		rendering.set_visible(shield_generator.battery_bar_bg, false)
-		rendering.set_visible(shield_generator.battery_bar, false)
+		-- rendering.set_visible(shield_generator.battery_bar_bg, false)
+		-- rendering.set_visible(shield_generator.battery_bar, false)
+
+		destroy_provider_bars(shield_generator)
 
 		for i, data in ipairs(shield_generators_dirty) do
 			if data == shield_generator then
@@ -389,8 +422,9 @@ script.on_event(defines.events.on_tick, function(event)
 
 							if energy <= 0 then break end
 						else
-							rendering.set_visible(tracked_data.shield_bar, false)
-							rendering.set_visible(tracked_data.shield_bar_bg, false)
+							-- rendering.set_visible(tracked_data.shield_bar, false)
+							-- rendering.set_visible(tracked_data.shield_bar_bg, false)
+							destroy_shielded_bars(tracked_data)
 
 							table.remove(data.tracked_dirty, i2)
 							tracked_data.dirty = false
@@ -432,14 +466,16 @@ script.on_event(defines.events.on_tick, function(event)
 			elseif not data.tracked_dirty then
 				table.remove(shield_generators_dirty, i)
 
-				rendering.set_visible(data.battery_bar_bg, false)
-				rendering.set_visible(data.battery_bar, false)
+				-- rendering.set_visible(data.battery_bar_bg, false)
+				-- rendering.set_visible(data.battery_bar, false)
+				destroy_provider_bars(data)
 
 				for i, tracked_data in ipairs(data.tracked) do
 					if tracked_data.unit.valid then
 						validate_shielded_bars(tracked_data)
-						rendering.set_visible(tracked_data.shield_bar, false)
-						rendering.set_visible(tracked_data.shield_bar_bg, false)
+						-- rendering.set_visible(tracked_data.shield_bar, false)
+						-- rendering.set_visible(tracked_data.shield_bar_bg, false)
+						destroy_shielded_bars(tracked_data)
 					else
 						mark_shield_dirty(data)
 						break
@@ -557,9 +593,11 @@ script.on_event(defines.events.on_tick, function(event)
 					lazy_unconnected_self_iter[tracked_data.id] = true
 				end
 			else
-				rendering.set_visible(tracked_data.shield_bar, false)
-				rendering.set_visible(tracked_data.shield_bar_bg, false)
-				rendering.set_visible(tracked_data.shield_bar_buffer, false)
+				-- rendering.set_visible(tracked_data.shield_bar, false)
+				-- rendering.set_visible(tracked_data.shield_bar_bg, false)
+				-- rendering.set_visible(tracked_data.shield_bar_buffer, false)
+
+				destroy_self_bars(tracked_data)
 
 				tracked_data.dirty = false
 				table.remove(shields_dirty, i)
@@ -739,6 +777,18 @@ function validate_shielded_bars(data)
 	end
 end
 
+function destroy_shielded_bars(data)
+	if data.shield_bar_bg and rendering.is_valid(data.shield_bar_bg) then
+		rendering.destroy(data.shield_bar_bg)
+		data.shield_bar_bg = nil
+	end
+
+	if data.shield_bar and rendering.is_valid(data.shield_bar) then
+		rendering.destroy(data.shield_bar)
+		data.shield_bar = nil
+	end
+end
+
 function bind_shield(entity, shield_provider, tick)
 	if not entity.destructible then return false end
 	local unit_number = entity.unit_number
@@ -834,6 +884,18 @@ function validate_provider_bars(data)
 			draw_on_ground = true,
 			only_in_alt_mode = true,
 		})
+	end
+end
+
+function destroy_provider_bars(data)
+	if data.battery_bar_bg and rendering.is_valid(data.battery_bar_bg) then
+		rendering.destroy(data.battery_bar_bg)
+		data.battery_bar_bg = nil
+	end
+
+	if data.battery_bar and rendering.is_valid(data.battery_bar) then
+		rendering.destroy(data.battery_bar)
+		data.battery_bar = nil
 	end
 end
 
@@ -991,6 +1053,23 @@ function validate_self_bars(data)
 			right_bottom = data.unit,
 			right_bottom_offset = {-data.width, data.height + BAR_HEIGHT},
 		})
+	end
+end
+
+function destroy_self_bars(data)
+	if data.shield_bar_bg and rendering.is_valid(data.shield_bar_bg) then
+		rendering.destroy(data.shield_bar_bg)
+		data.shield_bar_bg = nil
+	end
+
+	if data.shield_bar and rendering.is_valid(data.shield_bar) then
+		rendering.destroy(data.shield_bar)
+		data.shield_bar = nil
+	end
+
+	if data.shield_bar_buffer and rendering.is_valid(data.shield_bar_buffer) then
+		rendering.destroy(data.shield_bar_buffer)
+		data.shield_bar_buffer = nil
 	end
 end
 

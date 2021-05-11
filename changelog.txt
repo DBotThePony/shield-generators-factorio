@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.4
+Date: 11. 05. 2021
+  Optimisations:
+    - Destroy shield bar rendering objects when not visible instead of hiding them. https://forums.factorio.com/viewtopic.php?t=98277
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.3
 Date: 11. 05. 2021
   Fixes:
