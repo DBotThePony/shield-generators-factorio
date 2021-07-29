@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.6
+Date: 29. 07. 2021
+  Fixes:
+    - Fix crash if shield is removed earlier than on_remove is fired and something else is also removed
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.5
 Date: 11. 05. 2021
   Fixes:

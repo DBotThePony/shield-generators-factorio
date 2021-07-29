@@ -1371,7 +1371,7 @@ function on_destroyed(index, from_dirty)
 	if shields[index] then
 		local tracked_data = shields[index]
 
-		if tracked_data.shield then
+		if tracked_data.shield and tracked_data.shield.valid then
 			shield_to_self_map[tracked_data.shield.unit_number] = nil
 		else
 			report_error('Unexpected self shield deletion of now deleted unit ' .. index .. '. Getting around it is slow!')
