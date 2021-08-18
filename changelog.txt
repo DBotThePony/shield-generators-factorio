@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.7
+Date: 18. 08. 2021
+  Fixes:
+    - Support on_entity_cloned event (fully: turret shields, minimal: shield providers)
+    - Support above fixes issues with mods such as Space Exploration
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.6
 Date: 29. 07. 2021
   Fixes:

@@ -1137,6 +1137,8 @@ local function on_built_shieldable_self(entity, tick)
 			end
 		end
 	end
+
+	return tracked_data
 end
 
 local function on_built(created_entity, tick)
@@ -1188,6 +1190,35 @@ local function on_built(created_entity, tick)
 		end
 	end
 end
+
+local iface_name_length = #'shield-generators-interface'
+
+local function on_entity_cloned(event)
+	local source = event.source
+	local destination = event.destination
+
+	if string.sub(source.name, 1, iface_name_length) == 'shield-generators-interface' then
+		destination.destroy()
+	elseif shields[source.unit_number] then
+		local old_data = shields[source.unit_number]
+		local new_data = on_built_shieldable_self(destination, event.tick)
+
+		new_data.dirty = true
+		-- new_data.max_health = old_data.max_health
+		new_data.shield_health = old_data.shield_health
+		new_data.last_damage = old_data.last_damage
+		-- new_data.health = old_data.health
+
+		if old_data.shield.valid then
+			new_data.shield.energy = old_data.shield.energy
+			new_data.shield.electric_buffer_size = old_data.shield.electric_buffer_size
+		end
+	elseif RANGE_DEF[destination.name] then
+		on_built_shield_provider(destination, event.tick)
+	end
+end
+
+script.on_event(defines.events.on_entity_cloned, on_entity_cloned)
 
 script.on_event(defines.events.on_built_entity, function(event)
 	on_built(event.created_entity, event.tick)
