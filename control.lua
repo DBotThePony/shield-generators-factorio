@@ -147,6 +147,22 @@ script.on_configuration_changed(function()
 
 		global.migrated_98277 = true
 	end
+
+	if not global.delayed_bar_added then
+		for unumber, data in pairs(shields) do
+			data.shield_health_last = data.shield_health_last or data.shield_health
+			data.shield_health_last_t = data.shield_health_last_t or data.shield_health
+		end
+
+		for _, data in pairs(shield_generators) do
+			if data.tracked then
+				for i, tracked_data in ipairs(data.tracked) do
+					tracked_data.shield_health_last = tracked_data.shield_health_last or tracked_data.shield_health
+					tracked_data.shield_health_last_t = tracked_data.shield_health_last_t or tracked_data.shield_health
+				end
+			end
+		end
+	end
 end)
 
 script.on_init(function()
@@ -157,6 +173,7 @@ script.on_init(function()
 	global.lazy_unconnected_self_iter = {}
 
 	global.migrated_98277 = true
+	global.delayed_bar_added = true
 
 	shields = global.shields
 	destroy_remap = global.destroy_remap
@@ -352,6 +369,8 @@ local function mark_shield_dirty(shield_generator)
 end
 
 local _position = {}
+local VISUAL_DAMAGE_BAR_SHRINK_SPEED = values.VISUAL_DAMAGE_BAR_SHRINK_SPEED
+local VISUAL_DAMAGE_BAR_WAIT_TICKS = values.VISUAL_DAMAGE_BAR_WAIT_TICKS
 
 script.on_event(defines.events.on_tick, function(event)
 	if not speed_cache then
@@ -414,16 +433,41 @@ script.on_event(defines.events.on_tick, function(event)
 							tracked_data.shield_health = tracked_data.shield_health + delta
 							energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
-							if tracked_data.shield_bar then
-								_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
-								_position[2] = tracked_data.height
-								rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+							if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS then
+								tracked_data.shield_health_last_t = tracked_data.shield_health
 							end
 
+							tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
+
+							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
+							_position[2] = tracked_data.height
+
+							rendering.set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, _position)
+
+							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+							-- _position[2] = tracked_data.height
+
+							rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+
 							if energy <= 0 then break end
+						elseif tracked_data.shield_health_last > tracked_data.shield_health then
+
+							if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS then
+								tracked_data.shield_health_last_t = tracked_data.shield_health
+							end
+
+							tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
+
+							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
+							_position[2] = tracked_data.height
+
+							rendering.set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, _position)
+
+							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+							-- _position[2] = tracked_data.height
+
+							rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
 						else
-							-- rendering.set_visible(tracked_data.shield_bar, false)
-							-- rendering.set_visible(tracked_data.shield_bar_bg, false)
 							destroy_shielded_bars(tracked_data)
 
 							table.remove(data.tracked_dirty, i2)
@@ -534,6 +578,7 @@ script.on_event(defines.events.on_tick, function(event)
 			local energy = tracked_data.shield.energy
 
 			if tracked_data.shield_health < tracked_data.max_health then
+				-- energy above 0, proceed as normal
 				if energy > 0 then
 					local mult = 1
 
@@ -554,8 +599,19 @@ script.on_event(defines.events.on_tick, function(event)
 						tracked_data.health = tracked_data.unit.health
 					end
 
-					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+					if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS then
+						tracked_data.shield_health_last_t = tracked_data.shield_health
+					end
+
+					tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
+
+					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
 					_position[2] = tracked_data.height
+
+					rendering.set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, _position)
+
+					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+					-- _position[2] = tracked_data.height
 
 					rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
 
@@ -563,6 +619,25 @@ script.on_event(defines.events.on_tick, function(event)
 					_position[2] = tracked_data.height + BAR_HEIGHT
 
 					rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
+				-- we don't have any energy, but visual red bar is above current health, shrink it
+				elseif tracked_data.shield_health_last > tracked_data.shield_health then
+					if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS then
+						tracked_data.shield_health_last_t = tracked_data.shield_health
+					end
+
+					tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
+
+					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
+					_position[2] = tracked_data.height
+
+					rendering.set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, _position)
+
+					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
+					-- _position[2] = tracked_data.height
+
+					rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+				-- at least, we check connection to any electrical grid
+				-- if we are not connected to any electrical grid, stop ticking
 				elseif not tracked_data.shield.is_connected_to_electric_network() then
 					-- update bars before untracking
 					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
@@ -593,10 +668,6 @@ script.on_event(defines.events.on_tick, function(event)
 					lazy_unconnected_self_iter[tracked_data.id] = true
 				end
 			else
-				-- rendering.set_visible(tracked_data.shield_bar, false)
-				-- rendering.set_visible(tracked_data.shield_bar_bg, false)
-				-- rendering.set_visible(tracked_data.shield_bar_buffer, false)
-
 				destroy_self_bars(tracked_data)
 
 				tracked_data.dirty = false
@@ -691,6 +762,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		local health = shield.health or entity.health
 
 		shield.last_damage = event.tick
+		shield.shield_health_last = math_max(shield.shield_health_last or 0, shield_health)
 
 		if shield_health >= final_damage_amount then
 			-- HACK HACK HACK
@@ -716,7 +788,9 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			table_insert(shields_dirty, shield)
 			lazy_unconnected_self_iter[unit_number] = nil
 			validate_self_bars(shield)
+
 			rendering.set_visible(shield.shield_bar, true)
+			rendering.set_visible(shield.shield_bar_visual, true)
 			rendering.set_visible(shield.shield_bar_bg, true)
 			rendering.set_visible(shield.shield_bar_buffer, true)
 		end
@@ -763,6 +837,19 @@ function validate_shielded_bars(data)
 		})
 	end
 
+	if not data.shield_bar_visual or not rendering.is_valid(data.shield_bar_visual) then
+		data.shield_bar_visual = rendering.draw_rectangle({
+			color = values.SHIELD_COLOR_VISUAL,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
+			right_bottom = data.unit,
+			right_bottom_offset = {-data.width, data.height},
+		})
+	end
+
 	if not data.shield_bar or not rendering.is_valid(data.shield_bar) then
 		data.shield_bar = rendering.draw_rectangle({
 			color = values.SHIELD_COLOR,
@@ -786,6 +873,11 @@ function destroy_shielded_bars(data)
 	if data.shield_bar and rendering.is_valid(data.shield_bar) then
 		rendering.destroy(data.shield_bar)
 		data.shield_bar = nil
+	end
+
+	if data.shield_bar_visual and rendering.is_valid(data.shield_bar_visual) then
+		rendering.destroy(data.shield_bar_visual)
+		data.shield_bar_visual = nil
 	end
 end
 
@@ -811,6 +903,8 @@ function bind_shield(entity, shield_provider, tick)
 		max_health = entity.prototype.max_health * shield_util.max_capacity_modifier(shield_provider.unit.force.technologies),
 		unit = entity,
 		shield_health = 0, -- how much hitpoints this shield has
+		shield_health_last = 0,
+		shield_health_last_t = 0,
 		-- upper bound by max_health
 		unit_number = entity.unit_number,
 		dirty = true,
@@ -1029,6 +1123,19 @@ function validate_self_bars(data)
 		})
 	end
 
+	if not data.shield_bar_visual or not rendering.is_valid(data.shield_bar_visual) then
+		data.shield_bar_visual = rendering.draw_rectangle({
+			color = values.SHIELD_COLOR_VISUAL,
+			forces = {data.unit.force},
+			filled = true,
+			surface = data.unit.surface,
+			left_top = data.unit,
+			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
+			right_bottom = data.unit,
+			right_bottom_offset = {-data.width, data.height},
+		})
+	end
+
 	if not data.shield_bar or not rendering.is_valid(data.shield_bar) then
 		data.shield_bar = rendering.draw_rectangle({
 			color = values.SHIELD_COLOR,
@@ -1067,6 +1174,11 @@ function destroy_self_bars(data)
 		data.shield_bar = nil
 	end
 
+	if data.shield_bar_visual and rendering.is_valid(data.shield_bar_visual) then
+		rendering.destroy(data.shield_bar_visual)
+		data.shield_bar_visual = nil
+	end
+
 	if data.shield_bar_buffer and rendering.is_valid(data.shield_bar_buffer) then
 		rendering.destroy(data.shield_bar_buffer)
 		data.shield_bar_buffer = nil
@@ -1091,6 +1203,8 @@ local function on_built_shieldable_self(entity, tick)
 
 		max_health = entity.prototype.max_health,
 		shield_health = 0,
+		shield_health_last = 0,
+		shield_health_last_t = 0,
 
 		width = width,
 		height = height,
@@ -1133,11 +1247,8 @@ local function on_built_shieldable_self(entity, tick)
 				tracked_data.height = tracked_data.height + BAR_HEIGHT * 2
 
 				if tracked_data.shield_bar then
-					rendering.set_left_top(tracked_data.shield_bar, tracked_data.unit, {-tracked_data.width, tracked_data.height})
-				end
-
-				if tracked_data.shield_bar_bg then
-					rendering.set_left_top(tracked_data.shield_bar_bg, tracked_data.unit, {-tracked_data.width, tracked_data.height})
+					destroy_shielded_bars(tracked_data)
+					validate_shielded_bars(tracked_data)
 				end
 			end
 		end
