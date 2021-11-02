@@ -709,7 +709,9 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
 
 			if tracked_data then
-				tracked_data.last_damage = event.tick
+				if final_damage_amount >= 1 then
+					tracked_data.last_damage = event.tick
+				end
 
 				local health = tracked_data.health
 				local shield_health = tracked_data.shield_health
@@ -757,7 +759,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 	-- if damage wa reflected by shield provider, just update our "last damaged" tick
 	if final_damage_amount <= 0 then
-		if shield then
+		if shield and final_damage_amount >= 1 then
 			shield.last_damage = event.tick
 		end
 
@@ -771,7 +773,10 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		local shield_health = shield.shield_health
 		local health = shield.health or entity.health
 
-		shield.last_damage = event.tick
+		if final_damage_amount >= 1 then
+			shield.last_damage = event.tick
+		end
+
 		shield.shield_health_last = math_max(shield.shield_health_last or 0, shield_health)
 
 		if shield_health >= final_damage_amount then

@@ -1,8 +1,10 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.9
+Version: 0.1.10
 Date: 02. 11. 2021
   Additions:
     - Visual effect on shield bar upon taking damage
+  Balancing:
+    - Damage must be at least 1 hitpoint for it to reset shield build speed
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.8
