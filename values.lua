@@ -35,6 +35,7 @@ values.SHIELD_RADIUS_COLOR[3] = values.SHIELD_RADIUS_COLOR[3] * values.SHIELD_RA
 
 values.VISUAL_DAMAGE_BAR_SHRINK_SPEED = 0.01
 values.VISUAL_DAMAGE_BAR_WAIT_TICKS = 30
+values.VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX = 90
 
 values.GENERATORS = {
 	'shield-generators-generator',

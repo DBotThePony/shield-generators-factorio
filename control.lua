@@ -173,6 +173,30 @@ script.on_configuration_changed(function()
 			end
 		end
 	end
+
+	if not global.delayed_bar_added2 then
+		for unumber, data in pairs(shields) do
+			data.last_damage_bar = data.last_damage_bar or data.last_damage
+
+			if data.dirty then
+				destroy_self_bars(data)
+				validate_self_bars(data)
+			end
+		end
+
+		for _, data in pairs(shield_generators) do
+			if data.tracked then
+				for i, tracked_data in ipairs(data.tracked) do
+					tracked_data.last_damage_bar = tracked_data.last_damage_bar or tracked_data.last_damage
+
+					if tracked_data.dirty then
+						destroy_shielded_bars(tracked_data)
+						validate_shielded_bars(tracked_data)
+					end
+				end
+			end
+		end
+	end
 end)
 
 script.on_init(function()
@@ -184,6 +208,7 @@ script.on_init(function()
 
 	global.migrated_98277 = true
 	global.delayed_bar_added = true
+	global.delayed_bar_added2 = true
 
 	shields = global.shields
 	destroy_remap = global.destroy_remap
@@ -381,6 +406,7 @@ end
 local _position = {}
 local VISUAL_DAMAGE_BAR_SHRINK_SPEED = values.VISUAL_DAMAGE_BAR_SHRINK_SPEED
 local VISUAL_DAMAGE_BAR_WAIT_TICKS = values.VISUAL_DAMAGE_BAR_WAIT_TICKS
+local VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX = values.VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX
 
 script.on_event(defines.events.on_tick, function(event)
 	if not speed_cache then
@@ -443,8 +469,9 @@ script.on_event(defines.events.on_tick, function(event)
 							tracked_data.shield_health = tracked_data.shield_health + delta
 							energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
-							if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS then
+							if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
 								tracked_data.shield_health_last_t = tracked_data.shield_health
+								tracked_data.last_damage_bar = tick
 							end
 
 							tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
@@ -462,8 +489,9 @@ script.on_event(defines.events.on_tick, function(event)
 							if energy <= 0 then break end
 						elseif tracked_data.shield_health_last > tracked_data.shield_health then
 
-							if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS then
+							if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
 								tracked_data.shield_health_last_t = tracked_data.shield_health
+								tracked_data.last_damage_bar = tick
 							end
 
 							tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
@@ -609,8 +637,9 @@ script.on_event(defines.events.on_tick, function(event)
 						tracked_data.health = tracked_data.unit.health
 					end
 
-					if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS then
+					if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
 						tracked_data.shield_health_last_t = tracked_data.shield_health
+						tracked_data.last_damage_bar = tick
 					end
 
 					tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
@@ -631,8 +660,9 @@ script.on_event(defines.events.on_tick, function(event)
 					rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
 				-- we don't have any energy, but visual red bar is above current health, shrink it
 				elseif tracked_data.shield_health_last > tracked_data.shield_health then
-					if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS then
+					if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
 						tracked_data.shield_health_last_t = tracked_data.shield_health
+						tracked_data.last_damage_bar = tick
 					end
 
 					tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
@@ -928,6 +958,7 @@ function bind_shield(entity, shield_provider, tick)
 		height = height,
 
 		last_damage = tick,
+		last_damage_bar = tick,
 	}
 
 	validate_shielded_bars(tracked_data)
@@ -1225,6 +1256,7 @@ local function on_built_shieldable_self(entity, tick)
 		height = height,
 
 		last_damage = tick,
+		last_damage_bar = tick,
 
 		health = entity.health,
 		unit = entity,
@@ -1337,7 +1369,10 @@ local function on_entity_cloned(event)
 		new_data.dirty = true
 		-- new_data.max_health = old_data.max_health
 		new_data.shield_health = old_data.shield_health
+		new_data.shield_health_last = old_data.shield_health_last
+		new_data.shield_health_last_t = old_data.shield_health_last_t
 		new_data.last_damage = old_data.last_damage
+		new_data.last_damage_bar = old_data.last_damage_bar
 		-- new_data.health = old_data.health
 
 		if old_data.shield.valid then
