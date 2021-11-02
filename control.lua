@@ -152,6 +152,11 @@ script.on_configuration_changed(function()
 		for unumber, data in pairs(shields) do
 			data.shield_health_last = data.shield_health_last or data.shield_health
 			data.shield_health_last_t = data.shield_health_last_t or data.shield_health
+
+			if data.dirty then
+				destroy_self_bars(data)
+				validate_self_bars(data)
+			end
 		end
 
 		for _, data in pairs(shield_generators) do
@@ -159,6 +164,11 @@ script.on_configuration_changed(function()
 				for i, tracked_data in ipairs(data.tracked) do
 					tracked_data.shield_health_last = tracked_data.shield_health_last or tracked_data.shield_health
 					tracked_data.shield_health_last_t = tracked_data.shield_health_last_t or tracked_data.shield_health
+
+					if tracked_data.dirty then
+						destroy_shielded_bars(tracked_data)
+						validate_shielded_bars(tracked_data)
+					end
 				end
 			end
 		end
