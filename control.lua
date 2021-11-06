@@ -281,7 +281,7 @@ local function report_error(str)
 	log('Reporting managed error: ' .. str)
 end
 
-local function mark_shield_dirty(shield_generator)
+local function mark_shield_dirty(shield_generator, tick)
 	::MARK::
 
 	if not shield_generator.unit.valid then
@@ -289,7 +289,7 @@ local function mark_shield_dirty(shield_generator)
 		-- ???
 
 		report_error('Provider ' .. shield_generator.id .. ' turned out to be invalid, this should never happen')
-		on_destroyed(shield_generator.id)
+		on_destroyed(shield_generator.id, nil, tick) -- TODO: from_dirty = true?
 		return
 	end
 
@@ -311,7 +311,7 @@ local function mark_shield_dirty(shield_generator)
 
 				-- this also might happen on mod addition/removal
 				-- if mod changed prototype (e.g. furnace -> assembling-machine)
-				on_destroyed(tracked_data.unit_number, true)
+				on_destroyed(tracked_data.unit_number, true, tick)
 				size = size - 1
 				had_to_remove = true
 			elseif tracked_data.shield_health < tracked_data.max_health then
@@ -358,7 +358,7 @@ local function mark_shield_dirty(shield_generator)
 
 		for i, ent in ipairs(found) do
 			if not values.blacklist[ent.name] then
-				bind_shield(ent, shield_generator)
+				bind_shield(ent, shield_generator, tick)
 			end
 		end
 
@@ -559,7 +559,7 @@ script.on_event(defines.events.on_tick, function(event)
 						-- rendering.set_visible(tracked_data.shield_bar_bg, false)
 						destroy_shielded_bars(tracked_data)
 					else
-						mark_shield_dirty(data)
+						mark_shield_dirty(data, event.tick)
 						break
 					end
 				end
@@ -715,7 +715,7 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 		else
 			report_error('Late removal of self-shielded entity with id ' .. tracked_data.id)
-			on_destroyed(tracked_data.id)
+			on_destroyed(tracked_data.id, false, tick)
 
 			if shields_dirty[i] == tracked_data then
 				table.remove(shields_dirty, i)
@@ -768,7 +768,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 				-- not dirty? mark shield generator as dirty
 				if not shield_generator.tracked_dirty then
-					mark_shield_dirty(shield_generator)
+					mark_shield_dirty(shield_generator, event.tick)
 
 				-- shield is dirty but we are not?
 				-- mark us as dirty
@@ -1086,7 +1086,7 @@ local function on_built_shield_provider(entity, tick)
 	end
 
 	bind_shield(entity, data, tick)
-	mark_shield_dirty(data)
+	mark_shield_dirty(data, tick)
 end
 
 local function distance(a, b)
@@ -1151,7 +1151,7 @@ local function on_built_shieldable_entity(entity, tick)
 	if not provider_data then return end
 
 	if bind_shield(entity, provider_data, tick) then
-		mark_shield_dirty(provider_data)
+		mark_shield_dirty(provider_data, tick)
 	end
 end
 
@@ -1473,7 +1473,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 			})
 
 			for i, ent in ipairs(found) do
-				on_built_shieldable_self(ent)
+				on_built_shieldable_self(ent, event.tick)
 			end
 		end
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
@@ -1485,13 +1485,13 @@ script.on_event(defines.events.on_research_finished, function(event)
 			local data = shield_generators[i]
 
 			if not data.unit.valid then
-				on_destroyed(data.id, false)
+				on_destroyed(data.id, false, event.tick)
 			elseif data.unit.force == force then
 				for i2 = 1, #data.tracked do
 					data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
 				end
 
-				mark_shield_dirty(data)
+				mark_shield_dirty(data, event.tick)
 			end
 		end
 	end
@@ -1514,7 +1514,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 			})
 
 			for i, ent in ipairs(found) do
-				on_destroyed(ent.unit_number)
+				on_destroyed(ent.unit_number, false, event.tick)
 			end
 		end
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
@@ -1526,14 +1526,14 @@ script.on_event(defines.events.on_research_reversed, function(event)
 			local data = shield_generators[i]
 
 			if not data.unit.valid then
-				on_destroyed(data.id, false)
+				on_destroyed(data.id, false, event.tick)
 			elseif data.unit.force == force then
 				for i2 = 1, #data.tracked do
 					data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
 					data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
 				end
 
-				mark_shield_dirty(data)
+				mark_shield_dirty(data, event.tick)
 			end
 		end
 	end
@@ -1563,7 +1563,7 @@ script.on_event(defines.events.on_force_friends_changed, function(event)
 	rebuild_cache()
 end)
 
-function on_destroyed(index, from_dirty)
+function on_destroyed(index, from_dirty, tick)
 	-- entity with internal shield destroyed
 	if shields[index] then
 		local tracked_data = shields[index]
@@ -1630,7 +1630,7 @@ function on_destroyed(index, from_dirty)
 		end
 
 		for uid, data in pairs(rebound_uids) do
-			mark_shield_dirty(data)
+			mark_shield_dirty(data, tick)
 		end
 
 		-- destroy tracked data in sequential table
@@ -1685,7 +1685,7 @@ function on_destroyed(index, from_dirty)
 
 			if not from_dirty then
 				-- force dirty list to be rebuilt
-				mark_shield_dirty(shield_generator)
+				mark_shield_dirty(shield_generator, tick)
 			end
 		end
 
@@ -1695,6 +1695,6 @@ end
 
 script.on_event(defines.events.on_entity_destroyed, function(event)
 	if not destroy_remap[event.registration_number] then return end
-	on_destroyed(destroy_remap[event.registration_number])
+	on_destroyed(destroy_remap[event.registration_number], false, event.tick)
 	destroy_remap[event.registration_number] = nil
 end)
