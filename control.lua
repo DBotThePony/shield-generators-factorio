@@ -98,6 +98,7 @@ end
 
 local validate_self_bars, validate_provider_bars, validate_shielded_bars
 local destroy_self_bars, destroy_provider_bars, destroy_shielded_bars
+local report_error
 
 script.on_configuration_changed(function()
 	global.shields = global.shields or {}
@@ -149,7 +150,15 @@ script.on_configuration_changed(function()
 	end
 
 	if not global.delayed_bar_added then
+		::RETRY::
+
 		for unumber, data in pairs(shields) do
+			if not data.unit.valid then
+				report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
+				on_destroyed(unumber, true, 0)
+				goto RETRY
+			end
+
 			data.shield_health_last = data.shield_health_last or data.shield_health
 			data.shield_health_last_t = data.shield_health_last_t or data.shield_health
 
@@ -159,9 +168,25 @@ script.on_configuration_changed(function()
 			end
 		end
 
+		::RETRY2::
+
 		for _, data in pairs(shield_generators) do
+			if not data.unit.valid then
+				report_error('Shield provider ' .. data.id .. ' is no longer valid, but present in _G.shield_generators... Removing! This might be a bug.')
+				on_destroyed(data.id, true, 0)
+				goto RETRY2
+			end
+
 			if data.tracked then
+				::RETRY3::
+
 				for i, tracked_data in ipairs(data.tracked) do
+					if not tracked_data.unit.valid then
+						report_error('Shielded entity ' .. tracked_data.unit_number .. ' in provider ' .. data.id .. ' is no longer valid, but present in tracked_data... Removing! This might be a bug.')
+						on_destroyed(tracked_data.unit_number, true, 0)
+						goto RETRY3
+					end
+
 					tracked_data.shield_health_last = tracked_data.shield_health_last or tracked_data.shield_health
 					tracked_data.shield_health_last_t = tracked_data.shield_health_last_t or tracked_data.shield_health
 
@@ -175,7 +200,15 @@ script.on_configuration_changed(function()
 	end
 
 	if not global.delayed_bar_added2 then
+		::RETRY::
+
 		for unumber, data in pairs(shields) do
+			if not data.unit.valid then
+				report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
+				on_destroyed(unumber, true, 0)
+				goto RETRY
+			end
+
 			data.last_damage_bar = data.last_damage_bar or data.last_damage
 
 			if data.dirty then
@@ -184,9 +217,25 @@ script.on_configuration_changed(function()
 			end
 		end
 
+		::RETRY2::
+
 		for _, data in pairs(shield_generators) do
+			if not data.unit.valid then
+				report_error('Shield provider ' .. data.id .. ' is no longer valid, but present in _G.shield_generators... Removing! This might be a bug.')
+				on_destroyed(data.id, true, 0)
+				goto RETRY2
+			end
+
 			if data.tracked then
+				::RETRY3::
+
 				for i, tracked_data in ipairs(data.tracked) do
+					if not tracked_data.unit.valid then
+						report_error('Shielded entity ' .. tracked_data.unit_number .. ' in provider ' .. data.id .. ' is no longer valid, but present in tracked_data... Removing! This might be a bug.')
+						on_destroyed(tracked_data.unit_number, true, 0)
+						goto RETRY3
+					end
+
 					tracked_data.last_damage_bar = tracked_data.last_damage_bar or tracked_data.last_damage
 
 					if tracked_data.dirty then
@@ -276,7 +325,7 @@ local function fill_shield_to_self_map()
 	end
 end
 
-local function report_error(str)
+function report_error(str)
 	-- game.print('[Shield Generators] Reported managed error: ' .. str)
 	log('Reporting managed error: ' .. str)
 end
