@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.0
+Date: 21. 11. 2021
+  Balancing:
+    - Massively buffed shield generators power input
+    - Buffed shield generators power capacity
+    - Receiving damage on shielded entity now cripple shield build speed of entire provider
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.13
 Date: 18. 11. 2021
   Fixes:

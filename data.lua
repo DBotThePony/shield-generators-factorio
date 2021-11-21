@@ -61,9 +61,9 @@ local basic_shield_provider = {
 
 	energy_source = {
 		type = 'electric',
-		buffer_capacity = '60MJ',
+		buffer_capacity = '100MJ',
 		usage_priority = 'secondary-input',
-		input_flow_limit = '4MW',
+		input_flow_limit = '20MW',
 		output_flow_limit = '0W',
 		drain = '0W',
 	},
@@ -123,8 +123,8 @@ local basic_shield_provider = {
 
 local advanced_shield_provider = table.deepcopy(basic_shield_provider)
 advanced_shield_provider.name = 'shield-generators-generator-advanced'
-advanced_shield_provider.energy_source.buffer_capacity = '200MJ'
-advanced_shield_provider.energy_source.input_flow_limit = '15MW'
+advanced_shield_provider.energy_source.buffer_capacity = '800MJ'
+advanced_shield_provider.energy_source.input_flow_limit = '60MW'
 advanced_shield_provider.selection_box = {
 	{-2.5, -2.5},
 	{2.5, 2.5}
@@ -146,8 +146,8 @@ advanced_shield_provider.picture.layers[3].hr_version.scale = advanced_shield_pr
 
 local elite_shield_provider = table.deepcopy(basic_shield_provider)
 elite_shield_provider.name = 'shield-generators-generator-elite'
-elite_shield_provider.energy_source.buffer_capacity = '750MJ'
-elite_shield_provider.energy_source.input_flow_limit = '50MW'
+elite_shield_provider.energy_source.buffer_capacity = '2GJ'
+elite_shield_provider.energy_source.input_flow_limit = '500MW'
 elite_shield_provider.selection_box = {
 	{-3.5, -3.5},
 	{3.5, 3.5}
@@ -170,8 +170,8 @@ elite_shield_provider.picture.layers[3].hr_version.shift = util.by_pixel(7.5, -3
 
 local ultimate_shield_provider = table.deepcopy(basic_shield_provider)
 ultimate_shield_provider.name = 'shield-generators-generator-ultimate'
-ultimate_shield_provider.energy_source.buffer_capacity = '3GJ'
-ultimate_shield_provider.energy_source.input_flow_limit = '400MW'
+ultimate_shield_provider.energy_source.buffer_capacity = '5GJ'
+ultimate_shield_provider.energy_source.input_flow_limit = '2000MW'
 ultimate_shield_provider.selection_box = {
 	{-4.5, -4.5},
 	{4.5, 4.5}

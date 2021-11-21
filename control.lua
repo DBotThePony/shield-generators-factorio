@@ -488,11 +488,22 @@ script.on_event(defines.events.on_tick, function(event)
 
 				local count = #data.tracked_dirty
 				local health_per_tick = speed_cache[data.unit.force.name]
+				local mult = 1
 
-				if count * health_per_tick * CONSUMPTION_PER_HITPOINT > energy then
-					health_per_tick = energy / (CONSUMPTION_PER_HITPOINT * count)
+				-- first 1.5 seconds - base recharge rate
+				-- then linearly increase to triple speed
+				-- in next 3 seconds
+				if data.last_damage and tick - data.last_damage > delay then
+					mult = lerp((tick - data.last_damage - delay) / max_time, 1, max_speed)
 				end
 
+				if count * health_per_tick * CONSUMPTION_PER_HITPOINT > energy then
+					health_per_tick = energy / (CONSUMPTION_PER_HITPOINT * count) * mult
+				else
+					health_per_tick = health_per_tick * mult
+				end
+
+				-- iterate dirty shields inside shield provider
 				for i2 = count, 1, -1 do
 					local tracked_data = data.tracked[data.tracked_dirty[i2]]
 
@@ -505,16 +516,7 @@ script.on_event(defines.events.on_tick, function(event)
 								tracked_data.health = tracked_data.unit.health
 							end
 
-							local mult = 1
-
-							-- first 1.5 seconds - base recharge rate
-							-- then linearly increase to triple speed
-							-- in next 3 seconds
-							if tracked_data.last_damage and tick - tracked_data.last_damage > delay then
-								mult = lerp((tick - tracked_data.last_damage - delay) / max_time, 1, max_speed)
-							end
-
-							local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick * mult, tracked_data.max_health - tracked_data.shield_health)
+							local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, health_per_tick, tracked_data.max_health - tracked_data.shield_health)
 							tracked_data.shield_health = tracked_data.shield_health + delta
 							energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
@@ -789,6 +791,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 			if tracked_data then
 				if final_damage_amount >= 1 then
+					shield_generator.last_damage = event.tick
 					tracked_data.last_damage = event.tick
 				end
 
@@ -1110,6 +1113,8 @@ local function on_built_shield_provider(entity, tick)
 		surface = entity.surface.index,
 		pos = entity.position,
 		range = RANGE_DEF[entity.name] * RANGE_DEF[entity.name],
+
+		last_damage = tick or 0,
 
 		-- to be set to dynamic value later
 		max_energy = entity.electric_buffer_size,
