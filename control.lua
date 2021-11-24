@@ -497,8 +497,8 @@ script.on_event(defines.events.on_tick, function(event)
 					mult = lerp((tick - data.last_damage - delay) / max_time, 1, max_speed)
 				end
 
-				if count * health_per_tick * CONSUMPTION_PER_HITPOINT > energy then
-					health_per_tick = energy / (CONSUMPTION_PER_HITPOINT * count) * mult
+				if count * health_per_tick * mult * CONSUMPTION_PER_HITPOINT > energy then
+					health_per_tick = energy / (CONSUMPTION_PER_HITPOINT * count * mult)
 				else
 					health_per_tick = health_per_tick * mult
 				end
