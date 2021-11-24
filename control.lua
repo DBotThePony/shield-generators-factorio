@@ -798,6 +798,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				local health = tracked_data.health
 				local shield_health = tracked_data.shield_health
 
+				-- full absorption
 				if shield_health >= final_damage_amount then
 					-- HACK HACK HACK
 					-- we have no idea how to determine old health in this case
@@ -811,10 +812,19 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 					tracked_data.shield_health = shield_health - final_damage_amount
 					final_damage_amount = 0
 				else
+				-- partial absorption
 					final_damage_amount = final_damage_amount - tracked_data.shield_health
-					tracked_data.health = health - final_damage_amount
-					final_health = math_max(0, tracked_data.health)
+
+					--tracked_data.health = health - final_damage_amount
+
+					if event.final_health == 0 then
+						tracked_data.health = health - final_damage_amount
+					else
+						tracked_data.health = entity.health + tracked_data.shield_health
+					end
+
 					entity.health = tracked_data.health
+					final_health = math_max(0, tracked_data.health)
 					tracked_data.shield_health = 0
 				end
 

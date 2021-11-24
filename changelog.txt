@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.1
+Date: 24. 11. 2021
+  Fixes:
+    - Fix provider and self shields being stacked wrong, resulting in self shield not properly absorbing damage
+
+---------------------------------------------------------------------------------------------------
 Version: 0.2.0
 Date: 21. 11. 2021
   Balancing:
