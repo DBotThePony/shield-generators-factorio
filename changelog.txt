@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.3
+Date: 27. 11. 2021
+  Fixes:
+    - Building new entities inside existing shield provider no longer do hard validation (improved UPS)
+
+---------------------------------------------------------------------------------------------------
 Version: 0.2.2
 Date: 24. 11. 2021
   Fixes:

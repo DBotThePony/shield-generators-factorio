@@ -330,6 +330,56 @@ function report_error(str)
 	log('Reporting managed error: ' .. str)
 end
 
+local function start_ticking_shield_generator(shield_generator, tick)
+	validate_provider_bars(shield_generator)
+
+	rendering.set_visible(shield_generator.battery_bar_bg, true)
+	rendering.set_visible(shield_generator.battery_bar, true)
+
+	for i, _index in ipairs(shield_generator.tracked_dirty) do
+		validate_shielded_bars(shield_generator.tracked[_index])
+	end
+
+	local hit = false
+
+	for i, data in ipairs(shield_generators_dirty) do
+		if data == shield_generator then
+			hit = true
+			break
+		end
+	end
+
+	if not hit then
+		table_insert(shield_generators_dirty, shield_generator)
+	end
+end
+
+-- adding new entity to shield provider, just that.
+local function mark_shield_dirty_light(shield_generator, tick, unit_number)
+	::MARK::
+
+	if not shield_generator.unit.valid then
+		-- shield somehow became invalid
+		-- ???
+
+		report_error('Provider ' .. shield_generator.id .. ' turned out to be invalid, this should never happen')
+		on_destroyed(shield_generator.id, nil, tick) -- TODO: from_dirty = true?
+		return
+	end
+
+	if not shield_generator.tracked_dirty then
+		shield_generator.tracked_dirty = {}
+		start_ticking_shield_generator(shield_generator, tick)
+	end
+
+	for i = 1, #shield_generator.tracked do
+		if shield_generator.tracked[i].unit_number == unit_number then
+			table_insert(shield_generator.tracked_dirty, i)
+			break
+		end
+	end
+end
+
 local function mark_shield_dirty(shield_generator, tick)
 	::MARK::
 
@@ -368,7 +418,6 @@ local function mark_shield_dirty(shield_generator, tick)
 					shield_generator.tracked_dirty = {}
 				end
 
-				tracked_data.dirty = true
 				table_insert(shield_generator.tracked_dirty, i)
 
 				--[[if rendering.is_valid(tracked_data.shield_bar) then
@@ -376,7 +425,10 @@ local function mark_shield_dirty(shield_generator, tick)
 					rendering.set_visible(tracked_data.shield_bar_bg, true)
 				end]]
 
-				destroy_shielded_bars(tracked_data)
+				if not tracked_data.dirty then
+					tracked_data.dirty = true
+					destroy_shielded_bars(tracked_data)
+				end
 
 				i = i + 1
 			elseif tracked_data.dirty then
@@ -416,27 +468,7 @@ local function mark_shield_dirty(shield_generator, tick)
 
 	-- if we are dirty, let's tick
 	if shield_generator.tracked_dirty then
-		validate_provider_bars(shield_generator)
-
-		rendering.set_visible(shield_generator.battery_bar_bg, true)
-		rendering.set_visible(shield_generator.battery_bar, true)
-
-		for i, _index in ipairs(shield_generator.tracked_dirty) do
-			validate_shielded_bars(shield_generator.tracked[_index])
-		end
-
-		local hit = false
-
-		for i, data in ipairs(shield_generators_dirty) do
-			if data == shield_generator then
-				hit = true
-				break
-			end
-		end
-
-		if not hit then
-			table_insert(shield_generators_dirty, shield_generator)
-		end
+		start_ticking_shield_generator(shield_generator, tick)
 	else
 		-- rendering.set_visible(shield_generator.battery_bar_bg, false)
 		-- rendering.set_visible(shield_generator.battery_bar, false)
@@ -1215,7 +1247,8 @@ local function on_built_shieldable_entity(entity, tick)
 	if not provider_data then return end
 
 	if bind_shield(entity, provider_data, tick) then
-		mark_shield_dirty(provider_data, tick)
+		-- mark_shield_dirty(provider_data, tick)
+		mark_shield_dirty_light(provider_data, tick, entity.unit_number)
 	end
 end
 
