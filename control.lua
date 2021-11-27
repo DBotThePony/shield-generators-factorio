@@ -355,7 +355,7 @@ local function start_ticking_shield_generator(shield_generator, tick)
 end
 
 -- adding new entity to shield provider, just that.
-local function mark_shield_dirty_light(shield_generator, tick, unit_number)
+local function mark_shield_dirty_light(shield_generator, tick, unit_number, force)
 	if not shield_generator.unit.valid then
 		-- shield somehow became invalid
 		-- ???
@@ -382,7 +382,7 @@ local function mark_shield_dirty_light(shield_generator, tick, unit_number)
 	local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
 
 	if tracked_data then
-		if ticking or not tracked_data.dirty then
+		if ticking or force or not tracked_data.dirty then
 			tracked_data.dirty = true
 			table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
 			validate_shielded_bars(tracked_data)
@@ -1266,7 +1266,7 @@ local function on_built_shieldable_entity(entity, tick)
 
 	if bind_shield(entity, provider_data, tick) then
 		-- mark_shield_dirty(provider_data, tick)
-		mark_shield_dirty_light(provider_data, tick, entity.unit_number)
+		mark_shield_dirty_light(provider_data, tick, entity.unit_number, true)
 	end
 end
 
