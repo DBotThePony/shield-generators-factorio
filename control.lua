@@ -647,9 +647,14 @@ script.on_event(defines.events.on_tick, function(event)
 				-- rendering.set_visible(data.battery_bar, false)
 				destroy_provider_bars(data)
 
-				for i, tracked_data in ipairs(data.tracked) do
+				local tracked = data.tracked
+
+				--for i, tracked_data in ipairs(data.tracked) do
+				for i = 1, #tracked do
+					local tracked_data = tracked[i]
+
 					if tracked_data.unit.valid then
-						validate_shielded_bars(tracked_data)
+						-- validate_shielded_bars(tracked_data)
 						-- rendering.set_visible(tracked_data.shield_bar, false)
 						-- rendering.set_visible(tracked_data.shield_bar_bg, false)
 						destroy_shielded_bars(tracked_data)
