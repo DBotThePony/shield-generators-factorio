@@ -356,27 +356,39 @@ end
 
 -- adding new entity to shield provider, just that.
 local function mark_shield_dirty_light(shield_generator, tick, unit_number)
-	::MARK::
-
 	if not shield_generator.unit.valid then
 		-- shield somehow became invalid
 		-- ???
 
 		report_error('Provider ' .. shield_generator.id .. ' turned out to be invalid, this should never happen')
-		on_destroyed(shield_generator.id, nil, tick) -- TODO: from_dirty = true?
+		on_destroyed(shield_generator.id, false, tick)
 		return
 	end
 
-	if not shield_generator.tracked_dirty then
+	local ticking = not shield_generator.tracked_dirty
+
+	if ticking then
 		shield_generator.tracked_dirty = {}
 		start_ticking_shield_generator(shield_generator, tick)
 	end
 
-	for i = 1, #shield_generator.tracked do
+	--[[for i = 1, #shield_generator.tracked do
 		if shield_generator.tracked[i].unit_number == unit_number then
 			table_insert(shield_generator.tracked_dirty, i)
 			break
 		end
+	end]]
+
+	local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
+
+	if tracked_data then
+		if ticking or not tracked_data.dirty then
+			tracked_data.dirty = true
+			table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
+			validate_shielded_bars(tracked_data)
+		end
+	else
+		report_error('Trying to mark_shield_dirty_light on ' .. unit_number .. ' which is not present in shield_generator.tracked_hash! This is a bug!')
 	end
 end
 
@@ -862,7 +874,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 				-- not dirty? mark shield generator as dirty
 				if not shield_generator.tracked_dirty then
-					mark_shield_dirty(shield_generator, event.tick)
+					-- mark_shield_dirty(shield_generator, event.tick)
+					mark_shield_dirty_light(shield_generator, event.tick, unit_number)
 
 				-- shield is dirty but we are not?
 				-- mark us as dirty
