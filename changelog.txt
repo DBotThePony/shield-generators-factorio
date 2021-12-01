@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.4
+Date: 27. 11. 2021
+  Additions:
+    - Added exeperimental per-world option to remove turret shield interfaces when they are idling (for worlds with insane (>>>30k) amount of turrets)
+
+---------------------------------------------------------------------------------------------------
 Version: 0.2.3
 Date: 27. 11. 2021
   Fixes:

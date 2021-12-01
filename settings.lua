@@ -65,6 +65,15 @@ data:extend({
 	},
 
 	{
+		type = 'bool-setting',
+		name = 'shield-generators-keep-interfaces',
+		localised_description = {'mod-setting-description.shield-generators-keep-interfaces'},
+		setting_type = 'runtime-global',
+		default_value = true,
+		order = 'b0',
+	},
+
+	{
 		type = 'int-setting',
 		name = 'shield-generators-provider-range-basic',
 		setting_type = 'runtime-global',

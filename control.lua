@@ -112,6 +112,10 @@ script.on_configuration_changed(function()
 	shield_generators = global.shield_generators
 	lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
 
+	if global.keep_interfaces == nil then
+		global.keep_interfaces = true
+	end
+
 	if not lazy_unconnected_self_iter then
 		global.lazy_unconnected_self_iter = {}
 		lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
@@ -258,6 +262,7 @@ script.on_init(function()
 	global.migrated_98277 = true
 	global.delayed_bar_added = true
 	global.delayed_bar_added2 = true
+	global.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
 
 	shields = global.shields
 	destroy_remap = global.destroy_remap
@@ -274,7 +279,69 @@ script.on_init(function()
 	reload_values()
 end)
 
-script.on_event(defines.events.on_runtime_mod_setting_changed, reload_values)
+script.on_event(defines.events.on_runtime_mod_setting_changed, function()
+	reload_values()
+
+	if global.keep_interfaces ~= settings.global['shield-generators-keep-interfaces'].value then
+		global.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
+
+		if global.keep_interfaces then
+			::RETRY::
+
+			for unumber, data in pairs(shields) do
+				if not data.unit.valid then
+					report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
+					on_destroyed(unumber, true, 0)
+					goto RETRY
+				end
+
+				if not data.shield.valid then
+					local entity = data.unit
+
+					data.shield = entity.surface.create_entity({
+						name = shield_util.turret_interface_name(entity.force.technologies),
+						position = entity.position,
+						force = entity.force,
+					})
+
+					if shield_to_self_map then
+						shield_to_self_map[data.shield.unit_number] = data
+					end
+
+					data.shield.destructible = false
+					data.shield.minable = false
+					data.shield.rotatable = false
+					data.shield.electric_buffer_size = data.shield.electric_buffer_size * shield_util.turret_capacity_modifier(entity.force.technologies)
+					data.max_energy = data.shield.electric_buffer_size - 1
+
+					if data.shield_energy then
+						data.shield.energy = data.shield_energy
+						data.shield_energy = nil
+					end
+				end
+			end
+		else
+			::RETRY::
+
+			for unumber, data in pairs(shields) do
+				if not data.unit.valid then
+					report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
+					on_destroyed(unumber, true, 0)
+					goto RETRY
+				end
+
+				if data.shield.valid then
+					if data.shield.energy >= data.max_energy and not data.dirty then
+						data.shield_energy = data.shield.energy
+						data.shield.destroy()
+					end
+				else
+					data.shield_energy = data.shield_energy or 0
+				end
+			end
+		end
+	end
+end)
 
 script.on_load(function()
 	-- i could assert these, but
@@ -306,7 +373,7 @@ script.on_load(function()
 
 	-- build dirty list for self shielding entities from savegame
 	for unumber, data in pairs(shields) do
-		if data.dirty or data.shield_health < data.max_health or data.shield.energy < data.max_energy then
+		if data.dirty or data.shield_health < data.max_health or data.shield.valid and data.shield.energy < data.max_energy then
 			shields_dirty[nextindex] = data
 			nextindex = nextindex + 1
 		end
@@ -812,6 +879,12 @@ script.on_event(defines.events.on_tick, function(event)
 
 				tracked_data.dirty = false
 				table.remove(shields_dirty, i)
+
+				if not global.keep_interfaces then
+					shield_to_self_map[tracked_data.shield.unit_number] = nil
+					tracked_data.shield_energy = tracked_data.shield.energy
+					tracked_data.shield.destroy()
+				end
 			end
 		else
 			report_error('Late removal of self-shielded entity with id ' .. tracked_data.id)
@@ -943,6 +1016,30 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 		if not shield.dirty then
 			shield.dirty = true
 			table_insert(shields_dirty, shield)
+
+			if not shield.shield.valid then
+				shield.shield = entity.surface.create_entity({
+					name = shield_util.turret_interface_name(entity.force.technologies),
+					position = entity.position,
+					force = entity.force,
+				})
+
+				if shield_to_self_map then
+					shield_to_self_map[shield.shield.unit_number] = shield
+				end
+
+				shield.shield.destructible = false
+				shield.shield.minable = false
+				shield.shield.rotatable = false
+				shield.shield.electric_buffer_size = shield.shield.electric_buffer_size * shield_util.turret_capacity_modifier(entity.force.technologies)
+				shield.max_energy = shield.shield.electric_buffer_size - 1
+
+				if shield.shield_energy then
+					shield.shield.energy = shield.shield_energy
+					shield.shield_energy = nil
+				end
+			end
+
 			lazy_unconnected_self_iter[unit_number] = nil
 			validate_self_bars(shield)
 
@@ -1356,7 +1453,6 @@ local function on_built_shieldable_self(entity, tick)
 
 	local tracked_data = {
 		shield = entity.surface.create_entity({
-			-- name = 'shield-generators-interface',
 			name = shield_util.turret_interface_name(entity.force.technologies),
 			position = entity.position,
 			force = entity.force,
@@ -1493,6 +1589,8 @@ local function on_entity_cloned(event)
 		if old_data.shield.valid then
 			new_data.shield.energy = old_data.shield.energy
 			new_data.shield.electric_buffer_size = old_data.shield.electric_buffer_size
+		elseif old_data.shield_energy then
+			new_data.shield.energy = old_data.shield_energy
 		end
 	elseif RANGE_DEF[destination.name] then
 		on_built_shield_provider(destination, event.tick)
@@ -1517,7 +1615,7 @@ script.on_event(defines.events.on_robot_built_entity, function(event)
 	on_built(event.created_entity, event.tick)
 end)
 
-local function refresh_sentry_shields(force)
+local function refresh_turret_shields(force)
 	local classname = shield_util.turret_interface_name(force.technologies)
 	local modif = shield_util.turret_capacity_modifier(force.technologies)
 
@@ -1525,9 +1623,16 @@ local function refresh_sentry_shields(force)
 
 	for index, tracked_data in pairs(shields) do
 		if tracked_data.unit.force == force then
-			if tracked_data.shield.name ~= classname then
-				local energy = tracked_data.shield.energy
-				tracked_data.shield.destroy()
+			if not tracked_data.shield.valid or tracked_data.shield.name ~= classname then
+				local energy = tracked_data.shield.valid and tracked_data.shield.energy or tracked_data.shield_energy or 0
+
+				if shield_to_self_map and tracked_data.shield.valid then
+					shield_to_self_map[tracked_data.shield.unit_number] = nil
+				end
+
+				if tracked_data.shield.valid then
+					tracked_data.shield.destroy()
+				end
 
 				local shield = tracked_data.unit.surface.create_entity({
 					-- name = 'shield-generators-interface',
@@ -1535,6 +1640,10 @@ local function refresh_sentry_shields(force)
 					position = tracked_data.unit.position,
 					force = tracked_data.unit.force,
 				})
+
+				if shield_to_self_map then
+					shield_to_self_map[shield.unit_number] = tracked_data
+				end
 
 				tracked_data.shield = shield
 
@@ -1616,7 +1725,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 	end
 
 	if values.SENTRY_REBUILD_TRIGGERS[event.research.name] then
-		refresh_sentry_shields(event.research.force)
+		refresh_turret_shields(event.research.force)
 	end
 end)
 
@@ -1658,7 +1767,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 	end
 
 	if values.SENTRY_REBUILD_TRIGGERS[event.research.name] then
-		refresh_sentry_shields(event.research.force)
+		refresh_turret_shields(event.research.force)
 	end
 end)
 
