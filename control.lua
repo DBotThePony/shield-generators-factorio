@@ -331,6 +331,19 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function()
 				end
 
 				if data.shield.valid then
+					if data.disabled then
+						data.shield.electric_buffer_size = data.max_energy + 1
+						data.shield.energy = data.shield_energy
+
+						if not data.dirty then
+							data.dirty = true
+							data.disabled = nil
+
+							validate_self_bars(data)
+							table_insert(shields_dirty, data)
+						end
+					end
+
 					if data.shield.energy >= data.max_energy and not data.dirty then
 						data.shield_energy = data.shield.energy
 						data.shield.destroy()
@@ -591,7 +604,7 @@ script.on_event(defines.events.on_tick, function(event)
 		local data = shield_generators_dirty[i]
 
 		if data.unit.valid then
-			local energy = data.unit.energy
+			local energy = data.disabled and data.shield_energy or data.unit.energy
 
 			if energy > 0 then
 				-- whenever there was any dirty shields
@@ -690,9 +703,15 @@ script.on_event(defines.events.on_tick, function(event)
 				_position[1] = -data.width + 2 * data.width * energy / data.max_energy
 				_position[2] = data.height
 				rendering.set_right_bottom(data.battery_bar, data.unit, _position)
+			elseif data.disabled then
+				check = true
 			end
 
-			data.unit.energy = energy
+			if data.disabled then
+				data.shield_energy = energy
+			else
+				data.unit.energy = energy
+			end
 		else
 			-- report_error('Encountered invalid shield provider with index ' .. data.id)
 			check = true
@@ -705,7 +724,7 @@ script.on_event(defines.events.on_tick, function(event)
 		for i = #shield_generators_dirty, 1, -1 do
 			local data = shield_generators_dirty[i]
 
-			if not data.unit.valid then
+			if not data.unit.valid or data.disabled and data.shield_energy <= 0 then
 				table.remove(shield_generators_dirty, i)
 			elseif not data.tracked_dirty then
 				table.remove(shield_generators_dirty, i)
@@ -780,7 +799,7 @@ script.on_event(defines.events.on_tick, function(event)
 		local tracked_data = shields_dirty[i]
 
 		if tracked_data.unit.valid and tracked_data.shield.valid then
-			local energy = tracked_data.shield.energy
+			local energy = tracked_data.disabled and tracked_data.shield_energy or tracked_data.shield.energy
 
 			if tracked_data.shield_health < tracked_data.max_health then
 				-- energy above 0, proceed as normal
@@ -797,7 +816,12 @@ script.on_event(defines.events.on_tick, function(event)
 					local delta = math_min(energy / CONSUMPTION_PER_HITPOINT, turret_speed_cache[tracked_data.shield.force.name] * mult, tracked_data.max_health - tracked_data.shield_health)
 					tracked_data.shield_health = tracked_data.shield_health + delta
 					energy = energy - delta * CONSUMPTION_PER_HITPOINT
-					tracked_data.shield.energy = energy
+
+					if tracked_data.disabled then
+						tracked_data.shield_energy = energy
+					else
+						tracked_data.shield.energy = energy
+					end
 
 					if tracked_data.health ~= tracked_data.max_health then
 						-- update hacky health counter if required
@@ -845,7 +869,7 @@ script.on_event(defines.events.on_tick, function(event)
 					rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
 				-- at least, we check connection to any electrical grid
 				-- if we are not connected to any electrical grid, stop ticking
-				elseif not tracked_data.shield.is_connected_to_electric_network() then
+				elseif not tracked_data.shield.is_connected_to_electric_network() or tracked_data.disabled then
 					-- update bars before untracking
 					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
 					_position[2] = tracked_data.height
@@ -873,6 +897,10 @@ script.on_event(defines.events.on_tick, function(event)
 					tracked_data.dirty = false
 					table.remove(shields_dirty, i)
 					lazy_unconnected_self_iter[tracked_data.id] = true
+				elseif tracked_data.disabled then
+					-- shield is disabled - stop tracking it
+					tracked_data.dirty = false
+					table.remove(shields_dirty, i)
 				end
 			else
 				destroy_self_bars(tracked_data)
@@ -896,6 +924,58 @@ script.on_event(defines.events.on_tick, function(event)
 		end
 	end
 end)
+
+local function player_select_area(event)
+	if event.item ~= 'shield-generator-switch' then return end
+
+	for i, ent in ipairs(event.entities) do
+		local shield = shield_to_self_map[ent.unit_number]
+
+		if shield and global.keep_interfaces then
+			if shield.disabled then
+				ent.electric_buffer_size = shield.max_energy + 1
+				ent.energy = shield.shield_energy
+			else
+				shield.shield_energy = ent.energy
+				shield.max_energy = ent.electric_buffer_size - 1
+
+				ent.electric_buffer_size = 0
+				ent.energy = 0
+			end
+
+			shield.disabled = not shield.disabled
+
+			if not shield.dirty then
+				shield.dirty = true
+				validate_self_bars(shield)
+				table_insert(shields_dirty, shield)
+			end
+		elseif shield_generators_hash[ent.unit_number] then
+			shield = shield_generators_hash[ent.unit_number]
+
+			if shield.disabled then
+				ent.electric_buffer_size = shield.max_energy + 1
+				ent.energy = shield.shield_energy
+			else
+				shield.shield_energy = ent.energy
+				shield.max_energy = ent.electric_buffer_size - 1
+
+				ent.electric_buffer_size = 0
+				ent.energy = 0
+			end
+
+			shield.disabled = not shield.disabled
+
+			if not shield.dirty then
+				shield.dirty = true
+				table_insert(shield_generators_dirty, shield)
+			end
+		end
+	end
+end
+
+script.on_event(defines.events.on_player_selected_area, player_select_area)
+script.on_event(defines.events.on_player_alt_selected_area, player_select_area)
 
 script.on_event(defines.events.on_entity_damaged, function(event)
 	local entity, final_damage_amount = event.entity, event.final_damage_amount
@@ -1298,6 +1378,8 @@ local function on_built_shield_provider(entity, tick)
 
 	bind_shield(entity, data, tick)
 	mark_shield_dirty(data, tick)
+
+	return data
 end
 
 local function distance(a, b)
@@ -1403,7 +1485,7 @@ function validate_self_bars(data)
 			left_top = data.unit,
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
-			right_bottom_offset = {-data.width, data.height},
+			right_bottom_offset = {data.width * (2 * data.shield_health / data.max_health - 1), data.height},
 		})
 	end
 
@@ -1416,7 +1498,9 @@ function validate_self_bars(data)
 			left_top = data.unit,
 			left_top_offset = {-data.width, data.height},
 			right_bottom = data.unit,
-			right_bottom_offset = {-data.width, data.height + BAR_HEIGHT},
+			right_bottom_offset = {data.width * (2 * (
+				(data.disabled or not data.shield.valid) and data.shield_energy or data.shield.energy) /
+				(data.max_energy or data.shield.valid and data.shield.electric_buffer_size > 0 and data.shield.electric_buffer_size or 0xFFFFFFFF) - 1), data.height + BAR_HEIGHT},
 		})
 	end
 end
@@ -1445,7 +1529,7 @@ end
 
 local function on_built_shieldable_self(entity, tick)
 	local index = entity.unit_number
-	if shields[index] then return end -- wut
+	if shields[index] or entity.prototype.max_health <= 0 then return end -- wut
 
 	destroy_remap[script.register_on_entity_destroyed(entity)] = index
 
@@ -1584,13 +1668,37 @@ local function on_entity_cloned(event)
 		new_data.shield_health_last_t = old_data.shield_health_last_t
 		new_data.last_damage = old_data.last_damage
 		new_data.last_damage_bar = old_data.last_damage_bar
+		new_data.disabled = old_data.disabled
 		-- new_data.health = old_data.health
 
-		if old_data.shield.valid then
-			new_data.shield.energy = old_data.shield.energy
-			new_data.shield.electric_buffer_size = old_data.shield.electric_buffer_size
-		elseif old_data.shield_energy then
-			new_data.shield.energy = old_data.shield_energy
+		if old_data.disabled then
+			new_data.max_energy = old_data.max_energy
+			new_data.shield_energy = old_data.shield_energy
+			new_data.shield.electric_buffer_size = 0
+			new_data.shield.energy = 0
+		else
+			if old_data.shield.valid then
+				new_data.shield.energy = old_data.shield.energy
+				new_data.shield.electric_buffer_size = old_data.shield.electric_buffer_size
+			elseif old_data.shield_energy then
+				new_data.shield.energy = old_data.shield_energy
+			end
+		end
+
+		destroy_self_bars(new_data)
+		validate_self_bars(new_data)
+	elseif RANGE_DEF[destination.name] and shield_generators_hash[source.unit_number] then
+		local old_data = shield_generators_hash[source.unit_number]
+		local new_data = on_built_shield_provider(destination, event.tick)
+
+		new_data.shield_energy = old_data.shield_energy
+		new_data.max_energy = old_data.max_energy
+
+		new_data.disabled = old_data.disabled
+
+		if old_data.disabled then
+			destination.electric_buffer_size = 0
+			destination.energy = 0
 		end
 	elseif RANGE_DEF[destination.name] then
 		on_built_shield_provider(destination, event.tick)
@@ -1624,7 +1732,10 @@ local function refresh_turret_shields(force)
 	for index, tracked_data in pairs(shields) do
 		if tracked_data.unit.force == force then
 			if not tracked_data.shield.valid or tracked_data.shield.name ~= classname then
-				local energy = tracked_data.shield.valid and tracked_data.shield.energy or tracked_data.shield_energy or 0
+				local energy =
+					tracked_data.disabled and tracked_data.energy or
+					tracked_data.shield.valid and tracked_data.shield.energy or
+					tracked_data.shield_energy or 0
 
 				if shield_to_self_map and tracked_data.shield.valid then
 					shield_to_self_map[tracked_data.shield.unit_number] = nil
@@ -1653,7 +1764,11 @@ local function refresh_turret_shields(force)
 				shield.electric_buffer_size = shield.electric_buffer_size * modif
 				tracked_data.max_energy = shield.electric_buffer_size - 1
 
-				shield.energy = energy
+				if tracked_data.disabled then
+					shield.electric_buffer_size = 0
+				else
+					shield.energy = energy
+				end
 
 				if not tracked_data.dirty then
 					tracked_data.dirty = true
@@ -1669,8 +1784,14 @@ local function refresh_turret_shields(force)
 				local iface = tracked_data.shield.prototype.electric_energy_source_prototype
 
 				if iface then
-					tracked_data.shield.electric_buffer_size = iface.buffer_capacity * modif
-					tracked_data.max_energy = tracked_data.shield.electric_buffer_size - 1
+					local shield = tracked_data.shield
+
+					shield.electric_buffer_size = iface.buffer_capacity * modif
+					tracked_data.max_energy = shield.electric_buffer_size - 1
+
+					if tracked_data.disabled then
+						shield.electric_buffer_size = 0
+					end
 
 					if not tracked_data.dirty then
 						tracked_data.dirty = true

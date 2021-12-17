@@ -873,4 +873,57 @@ do
 	end
 end
 
+table.insert(prototypes, {
+	type = 'selection-tool',
+	name = 'shield-generator-switch',
+	icon = '__shield-generators__/graphics/icons/toggle-shields.png',
+	icon_size = 32,
+
+	selection_color = {92 / 255, 143 / 255, 247 / 255},
+	alt_selection_color = {92 / 255, 143 / 255, 247 / 255},
+
+	selection_mode = {'any-entity', 'same-force'},
+	alt_selection_mode = {'any-entity', 'same-force'},
+
+	selection_cursor_box_type = 'entity',
+	alt_selection_cursor_box_type = 'entity',
+
+	entity_type_filters = {'electric-energy-interface'},
+	alt_entity_type_filters = {'electric-energy-interface'},
+
+	flags = {'only-in-cursor', 'spawnable'},
+	subgroup = 'tool',
+	order = 'd[tools]-a[shield-generators-toggle]',
+	stack_size = 1
+})
+
+table.insert(prototypes, {
+	type = 'shortcut',
+	name = 'shield-generator-switch',
+	localised_name = {'item-name.shield-generator-switch'},
+
+	order = 'b[tools]-a[shield-generators-toggle]',
+
+	associated_control_input = 'shield-generator-switch',
+	action = 'spawn-item',
+	item_to_spawn = 'shield-generator-switch',
+	technology_to_unlock = 'shield-generators-basics',
+	icon = {
+		filename = '__shield-generators__/graphics/icons/toggle-shields-shortcut.png',
+		priority = 'extra-high-no-scale',
+		size = 64,
+		scale = 0.5,
+		flags = {'gui-icon'}
+	},
+})
+
+table.insert(prototypes, {
+	type = 'custom-input',
+	name = 'shield-generator-switch',
+	localised_name = {'item-name.shield-generator-switch'},
+	action = 'spawn-item',
+	item_to_spawn = 'shield-generator-switch',
+	key_sequence = 'ALT + S',
+})
+
 data:extend(prototypes)
