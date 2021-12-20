@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.1
+Date: 2021-12-20
+  Changes:
+    - assert() tick argument passed to some functions
+    - More soft last_damage_bar and last_damage check for validity with this version migration
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.0
 Date: 2021-12-17
   Features:

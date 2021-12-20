@@ -203,7 +203,9 @@ script.on_configuration_changed(function()
 		end
 	end
 
-	if not global.delayed_bar_added2 then
+	if not global.delayed_bar_added2 or not global.migrated_tick_check then
+		global.delayed_bar_added2 = true
+		global.migrated_tick_check = true
 		::RETRY::
 
 		for unumber, data in pairs(shields) do
@@ -213,7 +215,8 @@ script.on_configuration_changed(function()
 				goto RETRY
 			end
 
-			data.last_damage_bar = data.last_damage_bar or data.last_damage
+			data.last_damage_bar = data.last_damage_bar or data.last_damage or 0
+			data.last_damage = data.last_damage or 0
 
 			if data.dirty then
 				destroy_self_bars(data)
@@ -240,7 +243,7 @@ script.on_configuration_changed(function()
 						goto RETRY3
 					end
 
-					tracked_data.last_damage_bar = tracked_data.last_damage_bar or tracked_data.last_damage
+					tracked_data.last_damage_bar = tracked_data.last_damage_bar or tracked_data.last_damage or 0
 
 					if tracked_data.dirty then
 						destroy_shielded_bars(tracked_data)
@@ -262,6 +265,7 @@ script.on_init(function()
 	global.migrated_98277 = true
 	global.delayed_bar_added = true
 	global.delayed_bar_added2 = true
+	global.migrated_tick_check = true
 	global.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
 
 	shields = global.shields
@@ -1246,7 +1250,7 @@ function bind_shield(entity, shield_provider, tick)
 		width = width,
 		height = height,
 
-		last_damage = tick,
+		last_damage = assert(tick, 'bind_shield called without tick'),
 		last_damage_bar = tick,
 	}
 
@@ -1550,7 +1554,7 @@ local function on_built_shieldable_self(entity, tick)
 		width = width,
 		height = height,
 
-		last_damage = tick,
+		last_damage = assert(tick, 'on_built_shieldable_self called without tick'),
 		last_damage_bar = tick,
 
 		health = entity.health,
@@ -1666,8 +1670,8 @@ local function on_entity_cloned(event)
 		new_data.shield_health = old_data.shield_health
 		new_data.shield_health_last = old_data.shield_health_last
 		new_data.shield_health_last_t = old_data.shield_health_last_t
-		new_data.last_damage = old_data.last_damage
-		new_data.last_damage_bar = old_data.last_damage_bar
+		new_data.last_damage = assert(old_data.last_damage, 'old data is missing last_damage')
+		new_data.last_damage_bar = assert(old_data.last_damage_bar, 'old data is missing last_damage_bar')
 		new_data.disabled = old_data.disabled
 		-- new_data.health = old_data.health
 
