@@ -203,8 +203,9 @@ script.on_configuration_changed(function()
 		end
 	end
 
-	if not global.delayed_bar_added2 or not global.migrated_tick_check then
+	if not global.delayed_bar_added2 or not global.delayed_bar_added3 or not global.migrated_tick_check then
 		global.delayed_bar_added2 = true
+		global.delayed_bar_added3 = true
 		global.migrated_tick_check = true
 		::RETRY::
 
@@ -244,6 +245,7 @@ script.on_configuration_changed(function()
 					end
 
 					tracked_data.last_damage_bar = tracked_data.last_damage_bar or tracked_data.last_damage or 0
+					tracked_data.last_damage = tracked_data.last_damage or 0
 
 					if tracked_data.dirty then
 						destroy_shielded_bars(tracked_data)
