@@ -890,7 +890,10 @@ script.on_event(defines.events.on_tick, function(event)
 					-- remove shield from dirty list if energy empty and is not connected to any power network
 					tracked_data.dirty = false
 					table.remove(shields_dirty, i)
-					lazy_unconnected_self_iter[tracked_data.id] = true
+
+					if not tracked_data.disabled then
+						lazy_unconnected_self_iter[tracked_data.id] = true
+					end
 				end
 			elseif energy > 0 and energy < tracked_data.max_energy then
 				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy

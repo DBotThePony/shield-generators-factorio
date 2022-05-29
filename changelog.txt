@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.3
+Date: 2022-05-29
+  Fixes:
+    - Fix disabling shield had one piece of code thinking it is not connected to any power network (which is incorrect); This fixes crash where you disable and enable shield with no power in it's buffer
+
+---------------------------------------------------------------------------------------------------
 Version: 0.3.2
 Date: 2021-12-20
   Changes:
