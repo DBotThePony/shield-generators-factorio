@@ -1138,7 +1138,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			rendering.set_visible(shield.shield_bar_buffer, true)
 		end
 	end
-end)
+end, values.filter_types)
 
 local function determineDimensions(entity)
 	local width, height
@@ -1718,19 +1718,19 @@ script.on_event(defines.events.on_entity_cloned, on_entity_cloned)
 
 script.on_event(defines.events.on_built_entity, function(event)
 	on_built(event.created_entity, event.tick)
-end)
+end, values.filter_types)
 
 script.on_event(defines.events.script_raised_built, function(event)
 	on_built(event.entity, event.tick)
-end)
+end, values.filter_types)
 
 script.on_event(defines.events.script_raised_revive, function(event)
 	on_built(event.entity, event.tick)
-end)
+end, values.filter_types)
 
 script.on_event(defines.events.on_robot_built_entity, function(event)
 	on_built(event.created_entity, event.tick)
-end)
+end, values.filter_types)
 
 local function refresh_turret_shields(force)
 	local classname = shield_util.turret_interface_name(force.technologies)

@@ -129,13 +129,21 @@ values.allowed_types_self = {
 	['artillery-turret'] = true,
 }
 
+values.filter_types_self = {}
+
+for protoname in pairs(values.allowed_types_self) do
+	table.insert(values.filter_types_self, {
+		filter = 'type',
+		type = protoname
+	})
+end
+
 values._allowed_types_self = {}
 
 -- array to pass to find_entities_filtered and to build hash above
 values._allowed_types = {
 	'boiler',
 	'beacon',
-	'artillery-turret',
 	'accumulator',
 	'burner-generator',
 	'assembling-machine',
@@ -180,6 +188,7 @@ values._allowed_types = {
 	-- turrets have their own shield, but if we build shield protector near them
 	-- protect them too
 	'turret',
+	'artillery-turret',
 	'ammo-turret',
 	'electric-turret',
 	'fluid-turret',
@@ -203,8 +212,15 @@ values._blacklist = {
 	'tf-pole' -- tidy factory pole
 }
 
+values.filter_types = {}
+
 for i, _type in ipairs(values._allowed_types) do
 	values.allowed_types[_type] = true
+
+	table.insert(values.filter_types, {
+		filter = 'type',
+		type = _type
+	})
 end
 
 for i, _type in ipairs(values._blacklist) do
