@@ -223,6 +223,13 @@ for i, _type in ipairs(values._allowed_types) do
 	})
 end
 
+for _, provider in ipairs(values.GENERATORS) do
+	table.insert(values.filter_types, {
+		filter = 'name',
+		name = provider
+	})
+end
+
 for i, _type in ipairs(values._blacklist) do
 	values.blacklist[_type] = true
 end
