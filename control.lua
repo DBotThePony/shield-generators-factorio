@@ -26,6 +26,7 @@ local lazy_unconnected_self_iter
 local on_destroyed, bind_shield
 
 local speed_cache, turret_speed_cache
+local first_tick_validation = true
 
 local values = require('__shield-generators__/values')
 local shield_util = require('__shield-generators__/util')
@@ -387,6 +388,8 @@ script.on_load(function()
 
 		shield_generators_hash[data.id] = data
 	end
+
+	first_tick_validation = true
 
 	local nextindex = 1
 
@@ -781,6 +784,7 @@ script.on_event(defines.events.on_tick, function(event)
 				if _shield.valid then
 					if _shield.is_connected_to_electric_network() then
 						_data.dirty = true
+						validate_self_bars(_data)
 						table_insert(shields_dirty, _data)
 						lazy_unconnected_self_iter[global.lazy_key] = nil
 						-- global.lazy_key = nil
@@ -797,6 +801,18 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 		else
 			break
+		end
+	end
+
+	if first_tick_validation then
+		first_tick_validation = false
+
+		for i = #shields_dirty, 1, -1 do
+			local tracked_data = shields_dirty[i]
+
+			if tracked_data.unit.valid and tracked_data.shield.valid then
+				validate_self_bars(tracked_data)
+			end
 		end
 	end
 
@@ -895,7 +911,7 @@ script.on_event(defines.events.on_tick, function(event)
 						lazy_unconnected_self_iter[tracked_data.id] = true
 					end
 				end
-			elseif energy > 0 and energy < tracked_data.max_energy then
+			elseif energy < tracked_data.max_energy then
 				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
 				_position[2] = tracked_data.height + BAR_HEIGHT
 
@@ -1168,7 +1184,7 @@ end
 
 function validate_shielded_bars(data)
 	if not data.shield_bar_bg or not rendering.is_valid(data.shield_bar_bg) then
-		data.shield_bar_bg = rendering.draw_rectangle({
+		data.shield_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
 			filled = true,
@@ -1177,11 +1193,11 @@ function validate_shielded_bars(data)
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
 			right_bottom_offset = {data.width, data.height},
-		})
+		}), 'Unable to create renderable object')
 	end
 
 	if not data.shield_bar_visual or not rendering.is_valid(data.shield_bar_visual) then
-		data.shield_bar_visual = rendering.draw_rectangle({
+		data.shield_bar_visual = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR_VISUAL,
 			forces = {data.unit.force},
 			filled = true,
@@ -1190,11 +1206,11 @@ function validate_shielded_bars(data)
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
 			right_bottom_offset = {-data.width, data.height},
-		})
+		}), 'Unable to create renderable object')
 	end
 
 	if not data.shield_bar or not rendering.is_valid(data.shield_bar) then
-		data.shield_bar = rendering.draw_rectangle({
+		data.shield_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR,
 			forces = {data.unit.force},
 			filled = true,
@@ -1203,7 +1219,7 @@ function validate_shielded_bars(data)
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
 			right_bottom_offset = {-data.width, data.height},
-		})
+		}), 'Unable to create renderable object')
 	end
 end
 
@@ -1286,7 +1302,7 @@ end
 
 function validate_provider_bars(data)
 	if not data.battery_bar_bg or not rendering.is_valid(data.battery_bar_bg) then
-		data.battery_bar_bg = rendering.draw_rectangle({
+		data.battery_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
 			filled = true,
@@ -1295,11 +1311,11 @@ function validate_provider_bars(data)
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
 			right_bottom_offset = {data.width, data.height},
-		})
+		}), 'Unable to create renderable object')
 	end
 
 	if not data.battery_bar or not rendering.is_valid(data.battery_bar) then
-		data.battery_bar = rendering.draw_rectangle({
+		data.battery_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_BUFF_COLOR,
 			forces = {data.unit.force},
 			filled = true,
@@ -1308,11 +1324,11 @@ function validate_provider_bars(data)
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
 			right_bottom_offset = {-data.width, data.height},
-		})
+		}), 'Unable to create renderable object')
 	end
 
 	if not data.provider_radius or not rendering.is_valid(data.provider_radius) then
-		data.provider_radius = rendering.draw_circle({
+		data.provider_radius = assert(rendering.draw_circle({
 			color = values.SHIELD_RADIUS_COLOR,
 			forces = {data.unit.force},
 			filled = true,
@@ -1321,7 +1337,7 @@ function validate_provider_bars(data)
 			radius = RANGE_DEF[data.unit.name],
 			draw_on_ground = true,
 			only_in_alt_mode = true,
-		})
+		}), 'Unable to create renderable object')
 	end
 end
 
@@ -1460,7 +1476,7 @@ end
 
 function validate_self_bars(data)
 	if not data.shield_bar_bg or not rendering.is_valid(data.shield_bar_bg) then
-		data.shield_bar_bg = rendering.draw_rectangle({
+		data.shield_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
 			filled = true,
@@ -1469,11 +1485,11 @@ function validate_self_bars(data)
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
 			right_bottom_offset = {data.width, data.height + BAR_HEIGHT},
-		})
+		}), 'Unable to create renderable object')
 	end
 
 	if not data.shield_bar_visual or not rendering.is_valid(data.shield_bar_visual) then
-		data.shield_bar_visual = rendering.draw_rectangle({
+		data.shield_bar_visual = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR_VISUAL,
 			forces = {data.unit.force},
 			filled = true,
@@ -1482,11 +1498,11 @@ function validate_self_bars(data)
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
 			right_bottom_offset = {-data.width, data.height},
-		})
+		}), 'Unable to create renderable object')
 	end
 
 	if not data.shield_bar or not rendering.is_valid(data.shield_bar) then
-		data.shield_bar = rendering.draw_rectangle({
+		data.shield_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR,
 			forces = {data.unit.force},
 			filled = true,
@@ -1495,11 +1511,11 @@ function validate_self_bars(data)
 			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
 			right_bottom = data.unit,
 			right_bottom_offset = {data.width * (2 * data.shield_health / data.max_health - 1), data.height},
-		})
+		}), 'Unable to create renderable object')
 	end
 
 	if not data.shield_bar_buffer or not rendering.is_valid(data.shield_bar_buffer) then
-		data.shield_bar_buffer = rendering.draw_rectangle({
+		data.shield_bar_buffer = assert(rendering.draw_rectangle({
 			color = values.SHIELD_BUFF_COLOR,
 			forces = {data.unit.force},
 			filled = true,
@@ -1510,7 +1526,7 @@ function validate_self_bars(data)
 			right_bottom_offset = {data.width * (2 * (
 				(data.disabled or not data.shield.valid) and data.shield_energy or data.shield.energy) /
 				(data.max_energy or data.shield.valid and data.shield.electric_buffer_size > 0 and data.shield.electric_buffer_size or 0xFFFFFFFF) - 1), data.height + BAR_HEIGHT},
-		})
+		}), 'Unable to create renderable object')
 	end
 end
 
