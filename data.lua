@@ -72,50 +72,29 @@ local basic_shield_provider = {
 		layers = {
 			{
 				filename = '__base__/graphics/entity/beacon/beacon-bottom.png',
-				width = 106,
-				height = 96,
-				shift = util.by_pixel(0, 1),
-				hr_version = {
-					filename = '__base__/graphics/entity/beacon/hr-beacon-bottom.png',
-					width = 212,
-					height = 192,
-					scale = 0.5,
-					shift = util.by_pixel(0.5, 1)
-				}
+				width = 212,
+				height = 192,
+				scale = 0.5,
+				shift = util.by_pixel(0.5, 1)
 			},
 
 			{
 				filename = '__base__/graphics/entity/beacon/beacon-shadow.png',
-				width = 122,
-				height = 90,
+				width = 244,
+				height = 176,
+				scale = 0.5,
 				draw_as_shadow = true,
-				shift = util.by_pixel(12, 1),
-				hr_version = {
-					filename = '__base__/graphics/entity/beacon/hr-beacon-shadow.png',
-					width = 244,
-					height = 176,
-					scale = 0.5,
-					draw_as_shadow = true,
-					shift = util.by_pixel(12.5, 0.5)
-				}
+				shift = util.by_pixel(12.5, 0.5)
 			},
 
 			{
 				filename = '__base__/graphics/entity/beacon/beacon-top.png',
-				width = 48,
-				height = 70,
+				width = 96,
+				height = 140,
+				scale = 0.5,
 				repeat_count = 45,
 				animation_speed = 0.5,
-				shift = util.by_pixel(3, -19),
-				hr_version = {
-					filename = '__base__/graphics/entity/beacon/hr-beacon-top.png',
-					width = 96,
-					height = 140,
-					scale = 0.5,
-					repeat_count = 45,
-					animation_speed = 0.5,
-					shift = util.by_pixel(3, -19)
-				}
+				shift = util.by_pixel(3, -19)
 			},
 		},
 	},
@@ -137,12 +116,10 @@ advanced_shield_provider.collision_box = {
 
 advanced_shield_provider.max_health = 1000
 advanced_shield_provider.minable.result = 'shield-generators-generator-advanced'
-advanced_shield_provider.picture.layers[1].scale = 1.5
-advanced_shield_provider.picture.layers[2].scale = 1.5
-advanced_shield_provider.picture.layers[3].scale = 1.5
-advanced_shield_provider.picture.layers[1].hr_version.scale = advanced_shield_provider.picture.layers[1].hr_version.scale * advanced_shield_provider.picture.layers[1].scale
-advanced_shield_provider.picture.layers[2].hr_version.scale = advanced_shield_provider.picture.layers[2].hr_version.scale * advanced_shield_provider.picture.layers[2].scale
-advanced_shield_provider.picture.layers[3].hr_version.scale = advanced_shield_provider.picture.layers[3].hr_version.scale * advanced_shield_provider.picture.layers[3].scale
+advanced_shield_provider.picture.layers[1].scale = 1
+advanced_shield_provider.picture.layers[2].scale = 1
+advanced_shield_provider.picture.layers[3].scale = 1
+advanced_shield_provider.picture.layers[3].shift = util.by_pixel(6, -31)
 
 local elite_shield_provider = table.deepcopy(basic_shield_provider)
 elite_shield_provider.name = 'shield-generators-generator-elite'
@@ -160,13 +137,10 @@ elite_shield_provider.collision_box = {
 
 elite_shield_provider.max_health = 1800
 elite_shield_provider.minable.result = 'shield-generators-generator-elite'
-elite_shield_provider.picture.layers[1].scale = 2
-elite_shield_provider.picture.layers[2].scale = 2
-elite_shield_provider.picture.layers[3].scale = 2
-elite_shield_provider.picture.layers[1].hr_version.scale = elite_shield_provider.picture.layers[1].hr_version.scale * elite_shield_provider.picture.layers[1].scale
-elite_shield_provider.picture.layers[2].hr_version.scale = elite_shield_provider.picture.layers[2].hr_version.scale * elite_shield_provider.picture.layers[2].scale
-elite_shield_provider.picture.layers[3].hr_version.scale = elite_shield_provider.picture.layers[3].hr_version.scale * elite_shield_provider.picture.layers[3].scale
-elite_shield_provider.picture.layers[3].hr_version.shift = util.by_pixel(7.5, -37)
+elite_shield_provider.picture.layers[1].scale = 1.4
+elite_shield_provider.picture.layers[2].scale = 1.4
+elite_shield_provider.picture.layers[3].scale = 1.4
+elite_shield_provider.picture.layers[3].shift = util.by_pixel(7.5, -37)
 
 local ultimate_shield_provider = table.deepcopy(basic_shield_provider)
 ultimate_shield_provider.name = 'shield-generators-generator-ultimate'
@@ -184,14 +158,10 @@ ultimate_shield_provider.collision_box = {
 
 ultimate_shield_provider.max_health = 3000
 ultimate_shield_provider.minable.result = 'shield-generators-generator-ultimate'
-ultimate_shield_provider.picture.layers[1].scale = 3
-ultimate_shield_provider.picture.layers[2].scale = 3
-ultimate_shield_provider.picture.layers[3].scale = 3
-ultimate_shield_provider.picture.layers[1].hr_version.scale = ultimate_shield_provider.picture.layers[1].hr_version.scale * ultimate_shield_provider.picture.layers[1].scale
-ultimate_shield_provider.picture.layers[2].hr_version.scale = ultimate_shield_provider.picture.layers[2].hr_version.scale * ultimate_shield_provider.picture.layers[2].scale
-ultimate_shield_provider.picture.layers[3].hr_version.scale = ultimate_shield_provider.picture.layers[3].hr_version.scale * ultimate_shield_provider.picture.layers[3].scale
-ultimate_shield_provider.picture.layers[3].hr_version.shift = util.by_pixel(8.5, -56)
-
+ultimate_shield_provider.picture.layers[1].scale = 1.8
+ultimate_shield_provider.picture.layers[2].scale = 1.8
+ultimate_shield_provider.picture.layers[3].scale = 1.8
+ultimate_shield_provider.picture.layers[3].shift = util.by_pixel(8.5, -56)
 
 local prototypes = {
 	-- technologies
@@ -274,7 +244,7 @@ local prototypes = {
 			'shield-generators-basics',
 			'chemical-science-pack',
 			'military-3',
-			'advanced-electronics-2',
+			-- 'advanced-electronics-2', -- ????
 			'speed-module',
 		},
 
@@ -311,7 +281,7 @@ local prototypes = {
 		prerequisites = {
 			'low-density-structure',
 			'speed-module-2',
-			'effectivity-module',
+			'efficiency-module',
 			'shield-generators-provider-shields-basics',
 		},
 
@@ -348,7 +318,7 @@ local prototypes = {
 		prerequisites = {
 			'military-4',
 			'speed-module-2',
-			'effectivity-module-2',
+			'efficiency-module-2',
 			'shield-generators-generator-advanced',
 		},
 
@@ -384,7 +354,7 @@ local prototypes = {
 		},
 
 		prerequisites = {
-			'effectivity-module-3',
+			'efficiency-module-3',
 			'shield-generators-generator-elite',
 		},
 
@@ -462,16 +432,16 @@ local prototypes = {
 		type = 'recipe',
 		name = 'shield-generators-generator',
 		enabled = false,
-		result = 'shield-generators-generator',
+		results = {{type = 'item', name = 'shield-generators-generator', amount = 1}},
 
 		energy_required = 2,
 
 		ingredients = {
-			{'accumulator', 20},
-			{'speed-module', 5},
-			{'processing-unit', 10},
-			-- {'energy-shield-equipment', 15},
-			{'steel-plate', 20},
+			{type = 'item', name = 'accumulator', amount = 20},
+			{type = 'item', name = 'speed-module', amount = 5},
+			{type = 'item', name = 'processing-unit', amount = 10},
+			-- {type = 'item', name = 'energy-shield-equipment', 15},
+			{type = 'item', name = 'steel-plate', amount = 20},
 		},
 	},
 
@@ -479,17 +449,17 @@ local prototypes = {
 		type = 'recipe',
 		name = 'shield-generators-generator-advanced',
 		enabled = false,
-		result = 'shield-generators-generator-advanced',
+		results = {{type = 'item', name = 'shield-generators-generator-advanced', amount = 1}},
 
 		energy_required = 4,
 
 		ingredients = {
-			{'accumulator', 20},
-			{'speed-module-2', 5},
-			{'effectivity-module', 5},
-			{'processing-unit', 10},
-			{'shield-generators-generator', 2},
-			{'low-density-structure', 10},
+			{type = 'item', name = 'accumulator', amount = 20},
+			{type = 'item', name = 'speed-module-2', amount = 5},
+			{type = 'item', name = 'efficiency-module', amount = 5},
+			{type = 'item', name = 'processing-unit', amount = 10},
+			{type = 'item', name = 'shield-generators-generator', amount = 2},
+			{type = 'item', name = 'low-density-structure', amount = 10},
 		},
 	},
 
@@ -497,14 +467,14 @@ local prototypes = {
 		type = 'recipe',
 		name = 'shield-generators-generator-elite',
 		enabled = false,
-		result = 'shield-generators-generator-elite',
+		results = {{type = 'item', name = 'shield-generators-generator-elite', amount = 1}},
 
 		energy_required = 8,
 
 		ingredients = {
-			{'speed-module-2', 5},
-			{'effectivity-module-2', 5},
-			{'shield-generators-generator-advanced', 2},
+			{type = 'item', name = 'speed-module-2', amount = 5},
+			{type = 'item', name = 'efficiency-module-2', amount = 5},
+			{type = 'item', name = 'shield-generators-generator-advanced', amount = 2},
 		},
 	},
 
@@ -512,14 +482,14 @@ local prototypes = {
 		type = 'recipe',
 		name = 'shield-generators-generator-ultimate',
 		enabled = false,
-		result = 'shield-generators-generator-ultimate',
+		results = {{type = 'item', name = 'shield-generators-generator-ultimate', amount = 1}},
 
 		energy_required = 2,
 
 		ingredients = {
-			{'speed-module-3', 5},
-			{'effectivity-module-3', 5},
-			{'shield-generators-generator-elite', 2},
+			{type = 'item', name = 'speed-module-3', amount = 5},
+			{type = 'item', name = 'efficiency-module-3', amount = 5},
+			{type = 'item', name = 'shield-generators-generator-elite', amount = 2},
 		},
 	},
 
@@ -546,7 +516,7 @@ local prototypes = {
 		effects = {
 			{
 				type = 'nothing',
-				effect_description = {'effect-name.shield-generators-shields-health', values.SUPERCONDUCTING_PERCENT}
+				effect_description = {'effect-name.shield-generators-shields-health', tostring(values.SUPERCONDUCTING_PERCENT)}
 			}
 		},
 
@@ -614,7 +584,7 @@ do
 			effects = {
 				{
 					type = 'nothing',
-					effect_description = {'effect-name.shield-generators-turret-shield-capacity', data[1]}
+					effect_description = {'effect-name.shield-generators-turret-shield-capacity', tostring(data[1])}
 				}
 			},
 
@@ -651,13 +621,18 @@ do
 			'not-on-map',
 			'not-deconstructable',
 			'not-blueprintable',
-			'hidden',
 			'not-flammable',
 			'not-upgradable',
 			'not-in-kill-statistics',
 			'not-repairable',
 			'placeable-off-grid',
+			'not-selectable-in-game',
+			'no-copy-paste'
 		},
+
+		hidden = true,
+		hidden_in_factoriopedia = true,
+		selectable_in_game = false,
 
 		icon = '__base__/graphics/icons/energy-shield-equipment.png',
 		icon_size = 64,
@@ -673,7 +648,7 @@ do
 			{1, 1}
 		},
 
-		collision_mask = {}, -- do not collide with anything
+		collision_mask = {layers = {}}, -- do not collide with anything
 
 		energy_source = {
 			type = 'electric',
@@ -724,7 +699,7 @@ do
 			effects = {
 				{
 					type = 'nothing',
-					effect_description = {'effect-name.shield-generators-turret-shield-input', data[1]}
+					effect_description = {'effect-name.shield-generators-turret-shield-input', tostring(data[1])}
 				}
 			},
 
@@ -791,7 +766,7 @@ do
 			effects = {
 				{
 					type = 'nothing',
-					effect_description = {'effect-name.shield-generators-turret-shield-speed', data[1]}
+					effect_description = {'effect-name.shield-generators-turret-shield-speed', tostring(data[1])}
 				}
 			},
 
@@ -854,7 +829,7 @@ do
 			effects = {
 				{
 					type = 'nothing',
-					effect_description = {'effect-name.shield-generators-provider-shield-speed', data[1]}
+					effect_description = {'effect-name.shield-generators-provider-shield-speed', tostring(data[1])}
 				}
 			},
 
@@ -873,31 +848,30 @@ do
 	end
 end
 
-table.insert(prototypes, {
+local switch_prototype = {
 	type = 'selection-tool',
 	name = 'shield-generator-switch',
 	icon = '__shield-generators__/graphics/icons/toggle-shields.png',
 	icon_size = 32,
 
-	selection_color = {92 / 255, 143 / 255, 247 / 255},
-	alt_selection_color = {92 / 255, 143 / 255, 247 / 255},
-
-	selection_mode = {'any-entity', 'same-force'},
-	alt_selection_mode = {'any-entity', 'same-force'},
-
-	selection_cursor_box_type = 'entity',
-	alt_selection_cursor_box_type = 'entity',
-
-	entity_type_filters = {'electric-energy-interface'},
-	alt_entity_type_filters = {'electric-energy-interface'},
+	select = {
+		border_color = {92 / 255, 143 / 255, 247 / 255},
+		mode = {'any-entity', 'same-force'},
+		cursor_box_type = 'entity',
+		entity_type_filters = {'electric-energy-interface'},
+	},
 
 	flags = {'only-in-cursor', 'spawnable'},
 	subgroup = 'tool',
 	order = 'd[tools]-a[shield-generators-toggle]',
 	stack_size = 1
-})
+}
 
-table.insert(prototypes, {
+switch_prototype.alt_select = switch_prototype.select
+
+table.insert(prototypes, switch_prototype)
+
+local switch_shortcut = {
 	type = 'shortcut',
 	name = 'shield-generator-switch',
 	localised_name = {'item-name.shield-generator-switch'},
@@ -908,14 +882,15 @@ table.insert(prototypes, {
 	action = 'spawn-item',
 	item_to_spawn = 'shield-generator-switch',
 	technology_to_unlock = 'shield-generators-basics',
-	icon = {
-		filename = '__shield-generators__/graphics/icons/toggle-shields-shortcut.png',
-		priority = 'extra-high-no-scale',
-		size = 64,
+	icons = {{
+		icon = '__shield-generators__/graphics/icons/toggle-shields-shortcut.png',
+		icon_size = 64,
 		scale = 0.5,
-		flags = {'gui-icon'}
-	},
-})
+	}},
+}
+
+switch_shortcut.small_icons = switch_shortcut.icons
+table.insert(prototypes, switch_shortcut)
 
 table.insert(prototypes, {
 	type = 'custom-input',

@@ -82,9 +82,9 @@ local function reload_values()
 		RANGE_DEF['shield-generators-generator-ultimate']
 	)
 
-	if global['shield-generators-provider-capacity'] ~= settings.global['shield-generators-provider-capacity'].value and game then
+	if storage['shield-generators-provider-capacity'] ~= settings.global['shield-generators-provider-capacity'].value and game then
 		local value = settings.global['shield-generators-provider-capacity'].value
-		global['shield-generators-provider-capacity'] = value
+		storage['shield-generators-provider-capacity'] = value
 
 		for i = 1, #shield_generators do
 			if shield_generators[i].unit.valid and shield_generators[i].unit.prototype.electric_energy_source_prototype then
@@ -102,24 +102,24 @@ local destroy_self_bars, destroy_provider_bars, destroy_shielded_bars
 local report_error
 
 script.on_configuration_changed(function()
-	global.shields = global.shields or {}
-	global.destroy_remap = global.destroy_remap or {}
-	global.shield_generators_bound = global.shield_generators_bound or {}
-	global.shield_generators = global.shield_generators or {}
+	storage.shields = storage.shields or {}
+	storage.destroy_remap = storage.destroy_remap or {}
+	storage.shield_generators_bound = storage.shield_generators_bound or {}
+	storage.shield_generators = storage.shield_generators or {}
 
-	shields = global.shields
-	destroy_remap = global.destroy_remap
-	shield_generators_bound = global.shield_generators_bound
-	shield_generators = global.shield_generators
-	lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
+	shields = storage.shields
+	destroy_remap = storage.destroy_remap
+	shield_generators_bound = storage.shield_generators_bound
+	shield_generators = storage.shield_generators
+	lazy_unconnected_self_iter = storage.lazy_unconnected_self_iter
 
-	if global.keep_interfaces == nil then
-		global.keep_interfaces = true
+	if storage.keep_interfaces == nil then
+		storage.keep_interfaces = true
 	end
 
 	if not lazy_unconnected_self_iter then
-		global.lazy_unconnected_self_iter = {}
-		lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
+		storage.lazy_unconnected_self_iter = {}
+		lazy_unconnected_self_iter = storage.lazy_unconnected_self_iter
 
 		for unumber, data in pairs(shields) do
 			if not data.shield.is_connected_to_electric_network() then
@@ -130,7 +130,7 @@ script.on_configuration_changed(function()
 
 	reload_values()
 
-	if not global.migrated_98277 then
+	if not storage.migrated_98277 then
 		for _, data in pairs(shield_generators) do
 			if not data.tracked_dirty then
 				destroy_provider_bars(data)
@@ -151,10 +151,10 @@ script.on_configuration_changed(function()
 			end
 		end
 
-		global.migrated_98277 = true
+		storage.migrated_98277 = true
 	end
 
-	if not global.delayed_bar_added then
+	if not storage.delayed_bar_added then
 		::RETRY::
 
 		for unumber, data in pairs(shields) do
@@ -204,10 +204,10 @@ script.on_configuration_changed(function()
 		end
 	end
 
-	if not global.delayed_bar_added2 or not global.delayed_bar_added3 or not global.migrated_tick_check then
-		global.delayed_bar_added2 = true
-		global.delayed_bar_added3 = true
-		global.migrated_tick_check = true
+	if not storage.delayed_bar_added2 or not storage.delayed_bar_added3 or not storage.migrated_tick_check then
+		storage.delayed_bar_added2 = true
+		storage.delayed_bar_added3 = true
+		storage.migrated_tick_check = true
 		::RETRY::
 
 		for unumber, data in pairs(shields) do
@@ -259,23 +259,23 @@ script.on_configuration_changed(function()
 end)
 
 script.on_init(function()
-	global.shields = {}
-	global.destroy_remap = {}
-	global.shield_generators_bound = {}
-	global.shield_generators = {}
-	global.lazy_unconnected_self_iter = {}
+	storage.shields = {}
+	storage.destroy_remap = {}
+	storage.shield_generators_bound = {}
+	storage.shield_generators = {}
+	storage.lazy_unconnected_self_iter = {}
 
-	global.migrated_98277 = true
-	global.delayed_bar_added = true
-	global.delayed_bar_added2 = true
-	global.migrated_tick_check = true
-	global.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
+	storage.migrated_98277 = true
+	storage.delayed_bar_added = true
+	storage.delayed_bar_added2 = true
+	storage.migrated_tick_check = true
+	storage.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
 
-	shields = global.shields
-	destroy_remap = global.destroy_remap
-	shield_generators_bound = global.shield_generators_bound
-	shield_generators = global.shield_generators
-	lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
+	shields = storage.shields
+	destroy_remap = storage.destroy_remap
+	shield_generators_bound = storage.shield_generators_bound
+	shield_generators = storage.shield_generators
+	lazy_unconnected_self_iter = storage.lazy_unconnected_self_iter
 
 	shield_generators_hash = {}
 	shield_to_self_map = {}
@@ -289,10 +289,10 @@ end)
 script.on_event(defines.events.on_runtime_mod_setting_changed, function()
 	reload_values()
 
-	if global.keep_interfaces ~= settings.global['shield-generators-keep-interfaces'].value then
-		global.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
+	if storage.keep_interfaces ~= settings.global['shield-generators-keep-interfaces'].value then
+		storage.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
 
-		if global.keep_interfaces then
+		if storage.keep_interfaces then
 			::RETRY::
 
 			for unumber, data in pairs(shields) do
@@ -367,11 +367,11 @@ script.on_load(function()
 	-- i could assert these, but
 	-- on_configuration_changed is executed *after* on_load
 	-- meaning migrations are not yet applied
-	shields = global.shields
-	destroy_remap = global.destroy_remap
-	shield_generators_bound = global.shield_generators_bound
-	shield_generators = global.shield_generators
-	lazy_unconnected_self_iter = global.lazy_unconnected_self_iter
+	shields = storage.shields
+	destroy_remap = storage.destroy_remap
+	shield_generators_bound = storage.shield_generators_bound
+	shield_generators = storage.shield_generators
+	lazy_unconnected_self_iter = storage.lazy_unconnected_self_iter
 
 	shield_generators_dirty = {}
 	shields_dirty = {}
@@ -422,8 +422,8 @@ end
 local function start_ticking_shield_generator(shield_generator, tick)
 	validate_provider_bars(shield_generator)
 
-	rendering.set_visible(shield_generator.battery_bar_bg, true)
-	rendering.set_visible(shield_generator.battery_bar, true)
+	shield_generator.battery_bar_bg.visible = true
+	shield_generator.battery_bar.visible = true
 
 	for i, _index in ipairs(shield_generator.tracked_dirty) do
 		validate_shielded_bars(shield_generator.tracked[_index])
@@ -521,11 +521,6 @@ local function mark_shield_dirty(shield_generator, tick)
 
 				table_insert(shield_generator.tracked_dirty, i)
 
-				--[[if rendering.is_valid(tracked_data.shield_bar) then
-					rendering.set_visible(tracked_data.shield_bar, true)
-					rendering.set_visible(tracked_data.shield_bar_bg, true)
-				end]]
-
 				if not tracked_data.dirty then
 					tracked_data.dirty = true
 					destroy_shielded_bars(tracked_data)
@@ -533,11 +528,6 @@ local function mark_shield_dirty(shield_generator, tick)
 
 				i = i + 1
 			elseif tracked_data.dirty then
-				--[[if rendering.is_valid(tracked_data.shield_bar) then
-					rendering.set_visible(tracked_data.shield_bar, false)
-					rendering.set_visible(tracked_data.shield_bar_bg, false)
-				end]]
-
 				destroy_shielded_bars(tracked_data)
 
 				i = i + 1
@@ -571,9 +561,6 @@ local function mark_shield_dirty(shield_generator, tick)
 	if shield_generator.tracked_dirty then
 		start_ticking_shield_generator(shield_generator, tick)
 	else
-		-- rendering.set_visible(shield_generator.battery_bar_bg, false)
-		-- rendering.set_visible(shield_generator.battery_bar, false)
-
 		destroy_provider_bars(shield_generator)
 
 		for i, data in ipairs(shield_generators_dirty) do
@@ -589,6 +576,20 @@ local _position = {}
 local VISUAL_DAMAGE_BAR_SHRINK_SPEED = values.VISUAL_DAMAGE_BAR_SHRINK_SPEED
 local VISUAL_DAMAGE_BAR_WAIT_TICKS = values.VISUAL_DAMAGE_BAR_WAIT_TICKS
 local VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX = values.VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX
+local set_right_bottom
+
+-- workaround for new rendering API degrading Lua GC performance, imitating old API without causing GC overhead
+do
+	local loadable = {
+		entity = nil,
+		offset = _position
+	}
+
+	function set_right_bottom(renderable, entity)
+		loadable.entity = entity
+		renderable.right_bottom = loadable
+	end
+end
 
 script.on_event(defines.events.on_tick, function(event)
 	if not speed_cache then
@@ -663,12 +664,12 @@ script.on_event(defines.events.on_tick, function(event)
 							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
 							_position[2] = tracked_data.height
 
-							rendering.set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, _position)
+							set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit)
 
 							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
 							-- _position[2] = tracked_data.height
 
-							rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+							set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
 
 							if energy <= 0 then break end
 						elseif tracked_data.shield_health_last > tracked_data.shield_health then
@@ -683,12 +684,12 @@ script.on_event(defines.events.on_tick, function(event)
 							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
 							_position[2] = tracked_data.height
 
-							rendering.set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, _position)
+							set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit)
 
 							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
 							-- _position[2] = tracked_data.height
 
-							rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+							set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
 						else
 							destroy_shielded_bars(tracked_data)
 
@@ -711,7 +712,7 @@ script.on_event(defines.events.on_tick, function(event)
 
 				_position[1] = -data.width + 2 * data.width * energy / data.max_energy
 				_position[2] = data.height
-				rendering.set_right_bottom(data.battery_bar, data.unit, _position)
+				set_right_bottom(data.battery_bar, data.unit)
 			elseif data.disabled then
 				check = true
 			end
@@ -738,8 +739,6 @@ script.on_event(defines.events.on_tick, function(event)
 			elseif not data.tracked_dirty then
 				table.remove(shield_generators_dirty, i)
 
-				-- rendering.set_visible(data.battery_bar_bg, false)
-				-- rendering.set_visible(data.battery_bar, false)
 				destroy_provider_bars(data)
 
 				local tracked = data.tracked
@@ -749,9 +748,6 @@ script.on_event(defines.events.on_tick, function(event)
 					local tracked_data = tracked[i]
 
 					if tracked_data.unit.valid then
-						-- validate_shielded_bars(tracked_data)
-						-- rendering.set_visible(tracked_data.shield_bar, false)
-						-- rendering.set_visible(tracked_data.shield_bar_bg, false)
 						destroy_shielded_bars(tracked_data)
 					else
 						mark_shield_dirty(data, event.tick)
@@ -765,18 +761,18 @@ script.on_event(defines.events.on_tick, function(event)
 	local _value
 
 	for i = 1, 5 do
-		if global.lazy_key ~= nil and not lazy_unconnected_self_iter[global.lazy_key] then
-			global.lazy_key = nil
+		if storage.lazy_key ~= nil and not lazy_unconnected_self_iter[storage.lazy_key] then
+			storage.lazy_key = nil
 		end
 
-		global.lazy_key, _value = next(lazy_unconnected_self_iter, global.lazy_key)
+		storage.lazy_key, _value = next(lazy_unconnected_self_iter, storage.lazy_key)
 
 		if not _value then
-			global.lazy_key, _value = next(lazy_unconnected_self_iter)
+			storage.lazy_key, _value = next(lazy_unconnected_self_iter)
 		end
 
 		if _value then
-			local _data = shields[global.lazy_key]
+			local _data = shields[storage.lazy_key]
 
 			if _data then
 				local _shield = _data.shield
@@ -786,17 +782,17 @@ script.on_event(defines.events.on_tick, function(event)
 						_data.dirty = true
 						validate_self_bars(_data)
 						table_insert(shields_dirty, _data)
-						lazy_unconnected_self_iter[global.lazy_key] = nil
-						-- global.lazy_key = nil
+						lazy_unconnected_self_iter[storage.lazy_key] = nil
+						-- storage.lazy_key = nil
 					end
 				else
-					lazy_unconnected_self_iter[global.lazy_key] = nil
-					-- global.lazy_key = nil
+					lazy_unconnected_self_iter[storage.lazy_key] = nil
+					-- storage.lazy_key = nil
 					break
 				end
 			else
-				lazy_unconnected_self_iter[global.lazy_key] = nil
-				global.lazy_key = nil
+				lazy_unconnected_self_iter[storage.lazy_key] = nil
+				storage.lazy_key = nil
 				break
 			end
 		else
@@ -860,17 +856,17 @@ script.on_event(defines.events.on_tick, function(event)
 					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
 					_position[2] = tracked_data.height
 
-					rendering.set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, _position)
+					set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit)
 
 					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
 					-- _position[2] = tracked_data.height
 
-					rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+					set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
 
 					_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
 					_position[2] = tracked_data.height + BAR_HEIGHT
 
-					rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
+					set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit)
 				-- we don't have any energy, but visual red bar is above current health, shrink it
 				elseif tracked_data.shield_health_last > tracked_data.shield_health then
 					if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
@@ -883,12 +879,12 @@ script.on_event(defines.events.on_tick, function(event)
 					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
 					_position[2] = tracked_data.height
 
-					rendering.set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, _position)
+					set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit)
 
 					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
 					-- _position[2] = tracked_data.height
 
-					rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+					set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
 				-- at least, we check connection to any electrical grid
 				-- if we are not connected to any electrical grid, stop ticking
 				elseif not tracked_data.shield.is_connected_to_electric_network() or tracked_data.disabled then
@@ -896,12 +892,12 @@ script.on_event(defines.events.on_tick, function(event)
 					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
 					_position[2] = tracked_data.height
 
-					rendering.set_right_bottom(tracked_data.shield_bar, tracked_data.unit, _position)
+					set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
 
 					_position[1] = -tracked_data.width
 					_position[2] = tracked_data.height + BAR_HEIGHT
 
-					rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
+					set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit)
 
 					-- remove shield from dirty list if energy empty and is not connected to any power network
 					tracked_data.dirty = false
@@ -915,7 +911,7 @@ script.on_event(defines.events.on_tick, function(event)
 				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
 				_position[2] = tracked_data.height + BAR_HEIGHT
 
-				rendering.set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, _position)
+				set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit)
 
 				if not tracked_data.shield.is_connected_to_electric_network() then
 					-- remove shield from dirty list if energy half-full/empty and is not connected to any power network
@@ -933,7 +929,7 @@ script.on_event(defines.events.on_tick, function(event)
 				tracked_data.dirty = false
 				table.remove(shields_dirty, i)
 
-				if not global.keep_interfaces then
+				if not storage.keep_interfaces then
 					shield_to_self_map[tracked_data.shield.unit_number] = nil
 					tracked_data.shield_energy = tracked_data.shield.energy
 					tracked_data.shield.destroy()
@@ -956,7 +952,7 @@ local function player_select_area(event)
 	for i, ent in ipairs(event.entities) do
 		local shield = shield_to_self_map[ent.unit_number]
 
-		if shield and global.keep_interfaces then
+		if shield and storage.keep_interfaces then
 			if shield.disabled then
 				ent.electric_buffer_size = shield.max_energy + 1
 				ent.energy = shield.shield_energy
@@ -1066,8 +1062,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 					tracked_data.dirty = true
 					table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
 					validate_shielded_bars(tracked_data)
-					rendering.set_visible(tracked_data.shield_bar, true)
-					rendering.set_visible(tracked_data.shield_bar_bg, true)
+					tracked_data.shield_bar.visible = true
+					tracked_data.shield_bar_bg.visible = true
 				end
 			else
 				report_error('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
@@ -1148,10 +1144,10 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			lazy_unconnected_self_iter[unit_number] = nil
 			validate_self_bars(shield)
 
-			rendering.set_visible(shield.shield_bar, true)
-			rendering.set_visible(shield.shield_bar_visual, true)
-			rendering.set_visible(shield.shield_bar_bg, true)
-			rendering.set_visible(shield.shield_bar_buffer, true)
+			shield.shield_bar.visible = true
+			shield.shield_bar_visual.visible = true
+			shield.shield_bar_bg.visible = true
+			shield.shield_bar_buffer.visible = true
 		end
 	end
 end, values.filter_types)
@@ -1183,59 +1179,53 @@ local function determineDimensions(entity)
 end
 
 function validate_shielded_bars(data)
-	if not data.shield_bar_bg or not rendering.is_valid(data.shield_bar_bg) then
+	if not data.shield_bar_bg then
 		data.shield_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
-			right_bottom = data.unit,
-			right_bottom_offset = {data.width, data.height},
+			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
+			right_bottom = {entity = data.unit, offset = {data.width, data.height}},
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar_visual or not rendering.is_valid(data.shield_bar_visual) then
+	if not data.shield_bar_visual then
 		data.shield_bar_visual = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR_VISUAL,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
-			right_bottom = data.unit,
-			right_bottom_offset = {-data.width, data.height},
+			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
+			right_bottom = {entity = data.unit, offset = {-data.width, data.height}},
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar or not rendering.is_valid(data.shield_bar) then
+	if not data.shield_bar then
 		data.shield_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
-			right_bottom = data.unit,
-			right_bottom_offset = {-data.width, data.height},
+			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
+			right_bottom = {entity = data.unit, offset = {-data.width, data.height}},
 		}), 'Unable to create renderable object')
 	end
 end
 
 function destroy_shielded_bars(data)
-	if data.shield_bar_bg and rendering.is_valid(data.shield_bar_bg) then
-		rendering.destroy(data.shield_bar_bg)
+	if data.shield_bar_bg then
+		data.shield_bar_bg.destroy()
 		data.shield_bar_bg = nil
 	end
 
-	if data.shield_bar and rendering.is_valid(data.shield_bar) then
-		rendering.destroy(data.shield_bar)
+	if data.shield_bar then
+		data.shield_bar.destroy()
 		data.shield_bar = nil
 	end
 
-	if data.shield_bar_visual and rendering.is_valid(data.shield_bar_visual) then
-		rendering.destroy(data.shield_bar_visual)
+	if data.shield_bar_visual then
+		data.shield_bar_visual.destroy()
 		data.shield_bar_visual = nil
 	end
 end
@@ -1246,7 +1236,7 @@ function bind_shield(entity, shield_provider, tick)
 
 	if shield_generators_bound[unit_number] then return false end
 	if shield_provider.tracked_hash[unit_number] then return false end
-	local max_health = entity.prototype.max_health
+	local max_health = entity.max_health
 
 	if not max_health or max_health <= 0 then return false end
 
@@ -1259,7 +1249,7 @@ function bind_shield(entity, shield_provider, tick)
 	-- create tracked data for shield state
 	local tracked_data = {
 		health = entity.health,
-		max_health = entity.prototype.max_health * shield_util.max_capacity_modifier(shield_provider.unit.force.technologies),
+		max_health = entity.max_health * shield_util.max_capacity_modifier(shield_provider.unit.force.technologies),
 		unit = entity,
 		shield_health = 0, -- how much hitpoints this shield has
 		shield_health_last = 0,
@@ -1285,7 +1275,7 @@ function bind_shield(entity, shield_provider, tick)
 	-- set tracked_hash index value to index in shield_provider.tracked
 	shield_provider.tracked_hash[unit_number] = table_insert(shield_provider.tracked, tracked_data)
 
-	destroy_remap[script.register_on_entity_destroyed(entity)] = unit_number
+	destroy_remap[script.register_on_object_destroyed(entity)] = unit_number
 
 	return true
 end
@@ -1301,33 +1291,29 @@ local function rebind_shield(tracked_data, shield_provider)
 end
 
 function validate_provider_bars(data)
-	if not data.battery_bar_bg or not rendering.is_valid(data.battery_bar_bg) then
+	if not data.battery_bar_bg then
 		data.battery_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
-			right_bottom = data.unit,
-			right_bottom_offset = {data.width, data.height},
+			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
+			right_bottom = {entity = data.unit, offset = {data.width, data.height}},
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.battery_bar or not rendering.is_valid(data.battery_bar) then
+	if not data.battery_bar then
 		data.battery_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_BUFF_COLOR,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
-			right_bottom = data.unit,
-			right_bottom_offset = {-data.width, data.height},
+			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
+			right_bottom = {entity = data.unit, offset = {-data.width, data.height}},
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.provider_radius or not rendering.is_valid(data.provider_radius) then
+	if not data.provider_radius then
 		data.provider_radius = assert(rendering.draw_circle({
 			color = values.SHIELD_RADIUS_COLOR,
 			forces = {data.unit.force},
@@ -1342,13 +1328,13 @@ function validate_provider_bars(data)
 end
 
 function destroy_provider_bars(data)
-	if data.battery_bar_bg and rendering.is_valid(data.battery_bar_bg) then
-		rendering.destroy(data.battery_bar_bg)
+	if data.battery_bar_bg then
+		data.battery_bar_bg.destroy()
 		data.battery_bar_bg = nil
 	end
 
-	if data.battery_bar and rendering.is_valid(data.battery_bar) then
-		rendering.destroy(data.battery_bar)
+	if data.battery_bar then
+		data.battery_bar.destroy()
 		data.battery_bar = nil
 	end
 end
@@ -1356,7 +1342,7 @@ end
 local function on_built_shield_provider(entity, tick)
 	if shield_generators_hash[entity.unit_number] then return end -- wut
 
-	destroy_remap[script.register_on_entity_destroyed(entity)] = entity.unit_number
+	destroy_remap[script.register_on_object_destroyed(entity)] = entity.unit_number
 
 	local width, height = determineDimensions(entity)
 	height = height + BAR_HEIGHT
@@ -1475,88 +1461,87 @@ local function on_built_shieldable_entity(entity, tick)
 end
 
 function validate_self_bars(data)
-	if not data.shield_bar_bg or not rendering.is_valid(data.shield_bar_bg) then
+	if not data.shield_bar_bg then
 		data.shield_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
-			right_bottom = data.unit,
-			right_bottom_offset = {data.width, data.height + BAR_HEIGHT},
+			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
+			right_bottom = {entity = data.unit, offset = {data.width, data.height + BAR_HEIGHT}},
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar_visual or not rendering.is_valid(data.shield_bar_visual) then
+	if not data.shield_bar_visual then
 		data.shield_bar_visual = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR_VISUAL,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
-			right_bottom = data.unit,
-			right_bottom_offset = {-data.width, data.height},
+			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
+			right_bottom = {entity = data.unit, offset = {-data.width, data.height}},
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar or not rendering.is_valid(data.shield_bar) then
+	if not data.shield_bar then
 		data.shield_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height - BAR_HEIGHT},
-			right_bottom = data.unit,
-			right_bottom_offset = {data.width * (2 * data.shield_health / data.max_health - 1), data.height},
+			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
+			right_bottom = {entity = data.unit, offset = {data.width * (2 * data.shield_health / data.max_health - 1), data.height}},
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar_buffer or not rendering.is_valid(data.shield_bar_buffer) then
+	if not data.shield_bar_buffer then
 		data.shield_bar_buffer = assert(rendering.draw_rectangle({
 			color = values.SHIELD_BUFF_COLOR,
 			forces = {data.unit.force},
 			filled = true,
 			surface = data.unit.surface,
-			left_top = data.unit,
-			left_top_offset = {-data.width, data.height},
-			right_bottom = data.unit,
-			right_bottom_offset = {data.width * (2 * (
-				(data.disabled or not data.shield.valid) and data.shield_energy or data.shield.energy) /
-				(data.max_energy or data.shield.valid and data.shield.electric_buffer_size > 0 and data.shield.electric_buffer_size or 0xFFFFFFFF) - 1), data.height + BAR_HEIGHT},
+			left_top = {entity = data.unit, offset = {-data.width, data.height}},
+			right_bottom = {
+				entity = data.unit,
+				offset = {
+					data.width * (2 * (
+					(data.disabled or not data.shield.valid) and data.shield_energy or data.shield.energy) /
+					(data.max_energy or data.shield.valid and data.shield.electric_buffer_size > 0 and data.shield.electric_buffer_size or 0xFFFFFFFF) - 1),
+
+					data.height + BAR_HEIGHT
+				},
+			},
 		}), 'Unable to create renderable object')
 	end
 end
 
 function destroy_self_bars(data)
-	if data.shield_bar_bg and rendering.is_valid(data.shield_bar_bg) then
-		rendering.destroy(data.shield_bar_bg)
+	if data.shield_bar_bg then
+		data.shield_bar_bg.destroy()
 		data.shield_bar_bg = nil
 	end
 
-	if data.shield_bar and rendering.is_valid(data.shield_bar) then
-		rendering.destroy(data.shield_bar)
+	if data.shield_bar then
+		data.shield_bar.destroy()
 		data.shield_bar = nil
 	end
 
-	if data.shield_bar_visual and rendering.is_valid(data.shield_bar_visual) then
-		rendering.destroy(data.shield_bar_visual)
+	if data.shield_bar_visual then
+		data.shield_bar_visual.destroy()
 		data.shield_bar_visual = nil
 	end
 
-	if data.shield_bar_buffer and rendering.is_valid(data.shield_bar_buffer) then
-		rendering.destroy(data.shield_bar_buffer)
+	if data.shield_bar_buffer then
+		data.shield_bar_buffer.destroy()
 		data.shield_bar_buffer = nil
 	end
 end
 
 local function on_built_shieldable_self(entity, tick)
 	local index = entity.unit_number
-	if shields[index] or entity.prototype.max_health <= 0 then return end -- wut
+	if shields[index] or entity.max_health <= 0 then return end -- wut
 
-	destroy_remap[script.register_on_entity_destroyed(entity)] = index
+	destroy_remap[script.register_on_object_destroyed(entity)] = index
 
 	local width, height = determineDimensions(entity)
 
@@ -1567,7 +1552,7 @@ local function on_built_shieldable_self(entity, tick)
 			force = entity.force,
 		}),
 
-		max_health = entity.prototype.max_health,
+		max_health = entity.max_health,
 		shield_health = 0,
 		shield_health_last = 0,
 		shield_health_last_t = 0,
@@ -1643,7 +1628,7 @@ local function on_built(created_entity, tick)
 	-- check for poles
 	if created_entity.type == 'electric-pole' then
 		local pos = created_entity.position
-		local area = created_entity.prototype.supply_area_distance
+		local area = created_entity.prototype.get_supply_area_distance(created_entity.quality)
 
 		-- find any self shield in pole area
 		local found = created_entity.surface.find_entities_filtered({
@@ -1733,7 +1718,7 @@ end
 script.on_event(defines.events.on_entity_cloned, on_entity_cloned)
 
 script.on_event(defines.events.on_built_entity, function(event)
-	on_built(event.created_entity, event.tick)
+	on_built(event.entity, event.tick)
 end, values.filter_types)
 
 script.on_event(defines.events.script_raised_built, function(event)
@@ -1745,7 +1730,7 @@ script.on_event(defines.events.script_raised_revive, function(event)
 end, values.filter_types)
 
 script.on_event(defines.events.on_robot_built_entity, function(event)
-	on_built(event.created_entity, event.tick)
+	on_built(event.entity, event.tick)
 end, values.filter_types)
 
 local function refresh_turret_shields(force)
@@ -1801,9 +1786,9 @@ local function refresh_turret_shields(force)
 					shields_dirty[nextindex] = tracked_data
 					nextindex = nextindex + 1
 
-					rendering.set_visible(tracked_data.shield_bar, true)
-					rendering.set_visible(tracked_data.shield_bar_bg, true)
-					rendering.set_visible(tracked_data.shield_bar_buffer, true)
+					tracked_data.shield_bar.visible = true
+					tracked_data.shield_bar_bg.visible = true
+					tracked_data.shield_bar_buffer.visible = true
 				end
 			else
 				local iface = tracked_data.shield.prototype.electric_energy_source_prototype
@@ -1824,9 +1809,9 @@ local function refresh_turret_shields(force)
 						shields_dirty[nextindex] = tracked_data
 						nextindex = nextindex + 1
 
-						rendering.set_visible(tracked_data.shield_bar, true)
-						rendering.set_visible(tracked_data.shield_bar_bg, true)
-						rendering.set_visible(tracked_data.shield_bar_buffer, true)
+						tracked_data.shield_bar.visible = true
+						tracked_data.shield_bar_bg.visible = true
+						tracked_data.shield_bar_buffer.visible = true
 					end
 				end
 			end
@@ -1858,7 +1843,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 				on_destroyed(data.id, false, event.tick)
 			elseif data.unit.force == force then
 				for i2 = 1, #data.tracked do
-					data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
+					data.tracked[i2].max_health = data.tracked[i2].unit.max_health * mult
 				end
 
 				mark_shield_dirty(data, event.tick)
@@ -1899,7 +1884,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 				on_destroyed(data.id, false, event.tick)
 			elseif data.unit.force == force then
 				for i2 = 1, #data.tracked do
-					data.tracked[i2].max_health = data.tracked[i2].unit.prototype.max_health * mult
+					data.tracked[i2].max_health = data.tracked[i2].unit.max_health * mult
 					data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
 				end
 
@@ -2063,7 +2048,7 @@ function on_destroyed(index, from_dirty, tick)
 	end
 end
 
-script.on_event(defines.events.on_entity_destroyed, function(event)
+script.on_event(defines.events.on_object_destroyed, function(event)
 	if not destroy_remap[event.registration_number] then return end
 	on_destroyed(destroy_remap[event.registration_number], false, event.tick)
 	destroy_remap[event.registration_number] = nil
