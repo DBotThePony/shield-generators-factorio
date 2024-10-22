@@ -244,7 +244,7 @@ local prototypes = {
 			'shield-generators-basics',
 			'chemical-science-pack',
 			'military-3',
-			-- 'advanced-electronics-2', -- ????
+			'processing-unit',
 			'speed-module',
 		},
 
