@@ -1179,7 +1179,7 @@ local function determineDimensions(entity)
 end
 
 function validate_shielded_bars(data)
-	if not data.shield_bar_bg then
+	if not data.shield_bar_bg or not data.shield_bar_bg.valid then
 		data.shield_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
@@ -1190,7 +1190,7 @@ function validate_shielded_bars(data)
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar_visual then
+	if not data.shield_bar_visual or not data.shield_bar_visual.valid then
 		data.shield_bar_visual = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR_VISUAL,
 			forces = {data.unit.force},
@@ -1201,7 +1201,7 @@ function validate_shielded_bars(data)
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar then
+	if not data.shield_bar or not data.shield_bar.valid then
 		data.shield_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR,
 			forces = {data.unit.force},
@@ -1291,7 +1291,7 @@ local function rebind_shield(tracked_data, shield_provider)
 end
 
 function validate_provider_bars(data)
-	if not data.battery_bar_bg then
+	if not data.battery_bar_bg or not data.battery_bar_bg.valid then
 		data.battery_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
@@ -1302,7 +1302,7 @@ function validate_provider_bars(data)
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.battery_bar then
+	if not data.battery_bar or not not data.battery_bar.valid then
 		data.battery_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_BUFF_COLOR,
 			forces = {data.unit.force},
@@ -1313,7 +1313,7 @@ function validate_provider_bars(data)
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.provider_radius then
+	if not data.provider_radius or not data.provider_radius.valid then
 		data.provider_radius = assert(rendering.draw_circle({
 			color = values.SHIELD_RADIUS_COLOR,
 			forces = {data.unit.force},
@@ -1461,7 +1461,7 @@ local function on_built_shieldable_entity(entity, tick)
 end
 
 function validate_self_bars(data)
-	if not data.shield_bar_bg then
+	if not data.shield_bar_bg or not data.shield_bar_bg.valid then
 		data.shield_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
 			forces = {data.unit.force},
@@ -1472,7 +1472,7 @@ function validate_self_bars(data)
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar_visual then
+	if not data.shield_bar_visual or not data.shield_bar_visual.valid then
 		data.shield_bar_visual = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR_VISUAL,
 			forces = {data.unit.force},
@@ -1483,7 +1483,7 @@ function validate_self_bars(data)
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar then
+	if not data.shield_bar or not data.shield_bar.valid then
 		data.shield_bar = assert(rendering.draw_rectangle({
 			color = values.SHIELD_COLOR,
 			forces = {data.unit.force},
@@ -1494,7 +1494,7 @@ function validate_self_bars(data)
 		}), 'Unable to create renderable object')
 	end
 
-	if not data.shield_bar_buffer then
+	if not data.shield_bar_buffer or not data.shield_bar_buffer.valid then
 		data.shield_bar_buffer = assert(rendering.draw_rectangle({
 			color = values.SHIELD_BUFF_COLOR,
 			forces = {data.unit.force},
