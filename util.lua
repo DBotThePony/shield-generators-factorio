@@ -73,13 +73,17 @@ function shield_util.recovery_speed_modifier(technologies)
 end
 
 function shield_util.max_capacity_modifier(technologies)
-	local modifier = 1
+	local modifier = settings.startup['shield-generators-multiplier'].value / 100.0
 
 	if technologies['shield-generators-superconducting-shields'].researched then
 		modifier = modifier + values.SUPERCONDUCTING_PERCENT / 100
 	end
 
 	return modifier
+end
+
+function shield_util.max_capacity_modifier_self(technologies)
+	return values.DURABILITY_MULTIPLIER / 100.0
 end
 
 function shield_util.starts_with(a, b)

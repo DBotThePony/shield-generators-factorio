@@ -30,6 +30,24 @@ data:extend({
 
 	{
 		type = 'double-setting',
+		name = 'shield-generators-superconducting-percent',
+		setting_type = 'startup',
+		default_value = 100.0,
+		minimum_value = 1.0,
+		order = 'b',
+	},
+
+	{
+		type = 'double-setting',
+		name = 'shield-generators-multiplier',
+		setting_type = 'startup',
+		default_value = 100.0,
+		minimum_value = 1.0,
+		order = 'aab',
+	},
+
+	{
+		type = 'double-setting',
 		name = 'shield-generators-hitpoints-base-rate-turret',
 		setting_type = 'runtime-global',
 		default_value = 10,

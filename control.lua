@@ -256,6 +256,20 @@ script.on_configuration_changed(function()
 			end
 		end
 	end
+
+	local nextDirtyIndex = #shields_dirty + 1
+
+	for _, data in pairs(shields) do
+		local old = data.max_health
+		data.max_health = data.unit.max_health * shield_util.max_capacity_modifier_self(data.unit.force.technologies)
+		data.shield_health = math_min(data.shield_health, data.max_health)
+
+		if old < data.max_health and not data.dirty then
+			data.dirty = true
+			shields_dirty[nextDirtyIndex] = data
+			nextDirtyIndex = nextDirtyIndex + 1
+		end
+	end
 end)
 
 script.on_init(function()
@@ -396,6 +410,7 @@ script.on_load(function()
 	-- build dirty list for self shielding entities from savegame
 	for unumber, data in pairs(shields) do
 		if data.dirty or data.shield_health < data.max_health or data.shield.valid and data.shield.energy < data.max_energy then
+			-- data.dirty = true
 			shields_dirty[nextindex] = data
 			nextindex = nextindex + 1
 		end
@@ -1552,7 +1567,7 @@ local function on_built_shieldable_self(entity, tick)
 			force = entity.force,
 		}),
 
-		max_health = entity.max_health,
+		max_health = entity.max_health * shield_util.max_capacity_modifier_self(entity.force.technologies),
 		shield_health = 0,
 		shield_health_last = 0,
 		shield_health_last_t = 0,

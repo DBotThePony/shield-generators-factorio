@@ -53,7 +53,8 @@ values.TURRET_SHIELD_CAPACITY_RESEARCH = {
 	{45, {{'military-4', false}}, 500, 45},
 }
 
-values.SUPERCONDUCTING_PERCENT = 100
+values.DURABILITY_MULTIPLIER = settings.startup['shield-generators-multiplier'].value
+values.SUPERCONDUCTING_PERCENT = settings.startup['shield-generators-superconducting-percent'].value
 
 values.TURRET_SHIELD_INPUT_RESEARCH = {
 	{25, {}, 250, 30},
