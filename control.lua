@@ -97,8 +97,8 @@ local function reload_values()
 	rebuild_cache()
 end
 
-local show_self_shield_bars, show_shield_provider_bars, validate_shielded_bars
-local hide_self_shield_bars, hide_shield_provider_bars, destroy_shielded_bars
+local show_self_shield_bars, show_shield_provider_bars, show_delegated_shield_bars
+local hide_self_shield_bars, hide_shield_provider_bars, hide_delegated_shield_bars
 local report_error
 
 script.on_configuration_changed(function()
@@ -139,7 +139,7 @@ script.on_configuration_changed(function()
 			if data.tracked then
 				for i, tracked_data in ipairs(data.tracked) do
 					if not tracked_data.dirty then
-						destroy_shielded_bars(tracked_data)
+						hide_delegated_shield_bars(tracked_data)
 					end
 				end
 			end
@@ -196,8 +196,8 @@ script.on_configuration_changed(function()
 					tracked_data.shield_health_last_t = tracked_data.shield_health_last_t or tracked_data.shield_health
 
 					if tracked_data.dirty then
-						destroy_shielded_bars(tracked_data)
-						validate_shielded_bars(tracked_data)
+						hide_delegated_shield_bars(tracked_data)
+						show_delegated_shield_bars(tracked_data)
 					end
 				end
 			end
@@ -249,8 +249,8 @@ script.on_configuration_changed(function()
 					tracked_data.last_damage = tracked_data.last_damage or 0
 
 					if tracked_data.dirty then
-						destroy_shielded_bars(tracked_data)
-						validate_shielded_bars(tracked_data)
+						hide_delegated_shield_bars(tracked_data)
+						show_delegated_shield_bars(tracked_data)
 					end
 				end
 			end
@@ -438,7 +438,7 @@ local function start_ticking_shield_generator(shield_generator, tick)
 	show_shield_provider_bars(shield_generator)
 
 	for i, _index in ipairs(shield_generator.tracked_dirty) do
-		validate_shielded_bars(shield_generator.tracked[_index])
+		show_delegated_shield_bars(shield_generator.tracked[_index])
 	end
 
 	local hit = false
@@ -486,7 +486,7 @@ local function mark_shield_provider_child_dirty(shield_generator, tick, unit_num
 		if ticking or force or not tracked_data.dirty then
 			tracked_data.dirty = true
 			table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
-			validate_shielded_bars(tracked_data)
+			show_delegated_shield_bars(tracked_data)
 		end
 	else
 		report_error('Trying to mark_shield_provider_child_dirty on ' .. unit_number .. ' which is not present in shield_generator.tracked_hash! This is a bug!')
@@ -535,12 +535,12 @@ local function mark_shield_provider_dirty(shield_generator, tick)
 
 				if not tracked_data.dirty then
 					tracked_data.dirty = true
-					destroy_shielded_bars(tracked_data)
+					hide_delegated_shield_bars(tracked_data)
 				end
 
 				i = i + 1
 			elseif tracked_data.dirty then
-				destroy_shielded_bars(tracked_data)
+				hide_delegated_shield_bars(tracked_data)
 
 				i = i + 1
 			else
@@ -703,7 +703,7 @@ script.on_event(defines.events.on_tick, function(event)
 
 							set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
 						else
-							destroy_shielded_bars(tracked_data)
+							hide_delegated_shield_bars(tracked_data)
 
 							table.remove(data.tracked_dirty, i2)
 							tracked_data.dirty = false
@@ -760,7 +760,7 @@ script.on_event(defines.events.on_tick, function(event)
 					local tracked_data = tracked[i]
 
 					if tracked_data.unit.valid then
-						destroy_shielded_bars(tracked_data)
+						hide_delegated_shield_bars(tracked_data)
 					else
 						mark_shield_provider_dirty(data, event.tick)
 						break
@@ -1073,9 +1073,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				elseif not tracked_data.dirty then
 					tracked_data.dirty = true
 					table_insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
-					validate_shielded_bars(tracked_data)
-					tracked_data.shield_bar.visible = true
-					tracked_data.shield_bar_bg.visible = true
+					show_delegated_shield_bars(tracked_data)
 				end
 			else
 				report_error('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
@@ -1155,11 +1153,6 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 			lazy_unconnected_self_iter[unit_number] = nil
 			show_self_shield_bars(shield)
-
-			shield.shield_bar.visible = true
-			shield.shield_bar_visual.visible = true
-			shield.shield_bar_bg.visible = true
-			shield.shield_bar_buffer.visible = true
 		end
 	end
 end, values.filter_types)
@@ -1190,7 +1183,7 @@ local function determineDimensions(entity)
 	return width, height
 end
 
-function validate_shielded_bars(data)
+function show_delegated_shield_bars(data)
 	if not data.shield_bar_bg or not data.shield_bar_bg.valid then
 		data.shield_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
@@ -1225,7 +1218,7 @@ function validate_shielded_bars(data)
 	end
 end
 
-function destroy_shielded_bars(data)
+function hide_delegated_shield_bars(data)
 	if data.shield_bar_bg then
 		data.shield_bar_bg.destroy()
 		data.shield_bar_bg = nil
@@ -1277,7 +1270,7 @@ function bind_shield(entity, shield_provider, tick)
 		last_damage_bar = tick,
 	}
 
-	validate_shielded_bars(tracked_data)
+	show_delegated_shield_bars(tracked_data)
 
 	-- tell globally that this entity has it's shield provider
 	-- which we can later lookup in shield_generators_hash[shield_provider.id]
@@ -1611,8 +1604,8 @@ local function create_self_shield(entity, tick)
 				tracked_data.height = tracked_data.height + BAR_HEIGHT * 2
 
 				if tracked_data.shield_bar then
-					destroy_shielded_bars(tracked_data)
-					validate_shielded_bars(tracked_data)
+					hide_delegated_shield_bars(tracked_data)
+					show_delegated_shield_bars(tracked_data)
 				end
 			end
 		end
@@ -1797,10 +1790,6 @@ local function refresh_turret_shields(force)
 					show_self_shield_bars(tracked_data)
 					shields_dirty[nextindex] = tracked_data
 					nextindex = nextindex + 1
-
-					tracked_data.shield_bar.visible = true
-					tracked_data.shield_bar_bg.visible = true
-					tracked_data.shield_bar_buffer.visible = true
 				end
 			else
 				local iface = tracked_data.shield.prototype.electric_energy_source_prototype
@@ -1820,10 +1809,6 @@ local function refresh_turret_shields(force)
 						show_self_shield_bars(tracked_data)
 						shields_dirty[nextindex] = tracked_data
 						nextindex = nextindex + 1
-
-						tracked_data.shield_bar.visible = true
-						tracked_data.shield_bar_bg.visible = true
-						tracked_data.shield_bar_buffer.visible = true
 					end
 				end
 			end
@@ -1992,7 +1977,7 @@ function on_destroyed(index, from_dirty, tick)
 					shield_generators_bound[tracked_data.unit_number] = nil
 				end
 
-				destroy_shielded_bars(tracked_data)
+				hide_delegated_shield_bars(tracked_data)
 			end
 		end
 
@@ -2019,7 +2004,7 @@ function on_destroyed(index, from_dirty, tick)
 			-- let's remove us from tracked entities
 			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
 
-			destroy_shielded_bars(tracked_data)
+			hide_delegated_shield_bars(tracked_data)
 
 			local oindex = shield_generator.tracked_hash[index]
 			table.remove(shield_generator.tracked, shield_generator.tracked_hash[index])
