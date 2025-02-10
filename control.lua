@@ -459,7 +459,7 @@ local function start_ticking_shield_generator(shield_generator, tick)
 end
 
 -- adding new entity to shield provider, just that.
-local function mark_shield_dirty_light(shield_generator, tick, unit_number, force)
+local function mark_shield_provider_child_dirty(shield_generator, tick, unit_number, force)
 	if not shield_generator.unit.valid then
 		-- shield somehow became invalid
 		-- ???
@@ -492,11 +492,11 @@ local function mark_shield_dirty_light(shield_generator, tick, unit_number, forc
 			validate_shielded_bars(tracked_data)
 		end
 	else
-		report_error('Trying to mark_shield_dirty_light on ' .. unit_number .. ' which is not present in shield_generator.tracked_hash! This is a bug!')
+		report_error('Trying to mark_shield_provider_child_dirty on ' .. unit_number .. ' which is not present in shield_generator.tracked_hash! This is a bug!')
 	end
 end
 
-local function mark_shield_dirty(shield_generator, tick)
+local function mark_shield_provider_dirty(shield_generator, tick)
 	::MARK::
 
 	if not shield_generator.unit.valid then
@@ -765,7 +765,7 @@ script.on_event(defines.events.on_tick, function(event)
 					if tracked_data.unit.valid then
 						destroy_shielded_bars(tracked_data)
 					else
-						mark_shield_dirty(data, event.tick)
+						mark_shield_provider_dirty(data, event.tick)
 						break
 					end
 				end
@@ -1068,8 +1068,8 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 				-- not dirty? mark shield generator as dirty
 				if not shield_generator.tracked_dirty then
-					-- mark_shield_dirty(shield_generator, event.tick)
-					mark_shield_dirty_light(shield_generator, event.tick, unit_number)
+					-- mark_shield_provider_dirty(shield_generator, event.tick)
+					mark_shield_provider_child_dirty(shield_generator, event.tick, unit_number)
 
 				-- shield is dirty but we are not?
 				-- mark us as dirty
@@ -1403,7 +1403,7 @@ local function on_built_shield_provider(entity, tick)
 	end
 
 	bind_shield(entity, data, tick)
-	mark_shield_dirty(data, tick)
+	mark_shield_provider_dirty(data, tick)
 
 	return data
 end
@@ -1470,8 +1470,8 @@ local function on_built_shieldable_entity(entity, tick)
 	if not provider_data then return end
 
 	if bind_shield(entity, provider_data, tick) then
-		-- mark_shield_dirty(provider_data, tick)
-		mark_shield_dirty_light(provider_data, tick, entity.unit_number, true)
+		-- mark_shield_provider_dirty(provider_data, tick)
+		mark_shield_provider_child_dirty(provider_data, tick, entity.unit_number, true)
 	end
 end
 
@@ -1861,7 +1861,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 					data.tracked[i2].max_health = data.tracked[i2].unit.max_health * mult
 				end
 
-				mark_shield_dirty(data, event.tick)
+				mark_shield_provider_dirty(data, event.tick)
 			end
 		end
 	end
@@ -1903,7 +1903,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 					data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
 				end
 
-				mark_shield_dirty(data, event.tick)
+				mark_shield_provider_dirty(data, event.tick)
 			end
 		end
 	end
@@ -2000,7 +2000,7 @@ function on_destroyed(index, from_dirty, tick)
 		end
 
 		for uid, data in pairs(rebound_uids) do
-			mark_shield_dirty(data, tick)
+			mark_shield_provider_dirty(data, tick)
 		end
 
 		-- destroy tracked data in sequential table
@@ -2055,7 +2055,7 @@ function on_destroyed(index, from_dirty, tick)
 
 			if not from_dirty then
 				-- force dirty list to be rebuilt
-				mark_shield_dirty(shield_generator, tick)
+				mark_shield_provider_dirty(shield_generator, tick)
 			end
 		end
 
