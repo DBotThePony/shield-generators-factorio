@@ -97,8 +97,8 @@ local function reload_values()
 	rebuild_cache()
 end
 
-local validate_self_bars, validate_provider_bars, validate_shielded_bars
-local destroy_self_bars, destroy_provider_bars, destroy_shielded_bars
+local validate_self_bars, show_shield_provider_bars, validate_shielded_bars
+local destroy_self_bars, hide_shield_provider_bars, destroy_shielded_bars
 local report_error
 
 script.on_configuration_changed(function()
@@ -133,7 +133,7 @@ script.on_configuration_changed(function()
 	if not storage.migrated_98277 then
 		for _, data in pairs(shield_generators) do
 			if not data.tracked_dirty then
-				destroy_provider_bars(data)
+				hide_shield_provider_bars(data)
 			end
 
 			if data.tracked then
@@ -435,10 +435,7 @@ function report_error(str)
 end
 
 local function start_ticking_shield_generator(shield_generator, tick)
-	validate_provider_bars(shield_generator)
-
-	shield_generator.battery_bar_bg.visible = true
-	shield_generator.battery_bar.visible = true
+	show_shield_provider_bars(shield_generator)
 
 	for i, _index in ipairs(shield_generator.tracked_dirty) do
 		validate_shielded_bars(shield_generator.tracked[_index])
@@ -576,7 +573,7 @@ local function mark_shield_provider_dirty(shield_generator, tick)
 	if shield_generator.tracked_dirty then
 		start_ticking_shield_generator(shield_generator, tick)
 	else
-		destroy_provider_bars(shield_generator)
+		hide_shield_provider_bars(shield_generator)
 
 		for i, data in ipairs(shield_generators_dirty) do
 			if data == shield_generator then
@@ -754,7 +751,7 @@ script.on_event(defines.events.on_tick, function(event)
 			elseif not data.tracked_dirty then
 				table.remove(shield_generators_dirty, i)
 
-				destroy_provider_bars(data)
+				hide_shield_provider_bars(data)
 
 				local tracked = data.tracked
 
@@ -1305,7 +1302,7 @@ local function rebind_shield(tracked_data, shield_provider)
 	return true
 end
 
-function validate_provider_bars(data)
+function show_shield_provider_bars(data)
 	if not data.battery_bar_bg or not data.battery_bar_bg.valid then
 		data.battery_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
@@ -1342,7 +1339,7 @@ function validate_provider_bars(data)
 	end
 end
 
-function destroy_provider_bars(data)
+function hide_shield_provider_bars(data)
 	if data.battery_bar_bg then
 		data.battery_bar_bg.destroy()
 		data.battery_bar_bg = nil
@@ -1354,7 +1351,7 @@ function destroy_provider_bars(data)
 	end
 end
 
-local function on_built_shield_provider(entity, tick)
+local function initialize_shield_provider(entity, tick)
 	if shield_generators_hash[entity.unit_number] then return end -- wut
 
 	destroy_remap[script.register_on_object_destroyed(entity)] = entity.unit_number
@@ -1383,7 +1380,7 @@ local function on_built_shield_provider(entity, tick)
 		max_energy = entity.electric_buffer_size,
 	}
 
-	validate_provider_bars(data)
+	show_shield_provider_bars(data)
 
 	table_insert(shield_generators, data)
 	shield_generators_hash[entity.unit_number] = data
@@ -1463,7 +1460,7 @@ local function find_shield_provider(force, position, surface)
 	return provider_data
 end
 
-local function on_built_shieldable_entity(entity, tick)
+local function create_delegated_shield(entity, tick)
 	if values.blacklist[entity.name] then return end
 
 	local provider_data = find_shield_provider(entity.force, entity.position, entity.surface)
@@ -1552,7 +1549,7 @@ function destroy_self_bars(data)
 	end
 end
 
-local function on_built_shieldable_self(entity, tick)
+local function create_self_shield(entity, tick)
 	local index = entity.unit_number
 	if shields[index] or entity.max_health <= 0 then return end -- wut
 
@@ -1575,7 +1572,7 @@ local function on_built_shieldable_self(entity, tick)
 		width = width,
 		height = height,
 
-		last_damage = assert(tick, 'on_built_shieldable_self called without tick'),
+		last_damage = assert(tick, 'create_self_shield called without tick'),
 		last_damage_bar = tick,
 
 		health = entity.health,
@@ -1626,18 +1623,18 @@ end
 
 local function on_built(created_entity, tick)
 	if RANGE_DEF[created_entity.name] then
-		on_built_shield_provider(created_entity, tick)
+		initialize_shield_provider(created_entity, tick)
 		return
 	end
 
 	if values.allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
 		-- create turret shield first
-		on_built_shieldable_self(created_entity, tick)
+		create_self_shield(created_entity, tick)
 	end
 
 	if values.allowed_types[created_entity.type] then
 		-- create provider shield second
-		on_built_shieldable_entity(created_entity, tick)
+		create_delegated_shield(created_entity, tick)
 	end
 
 	-- check for poles
@@ -1684,7 +1681,7 @@ local function on_entity_cloned(event)
 		destination.destroy()
 	elseif shields[source.unit_number] then
 		local old_data = shields[source.unit_number]
-		local new_data = on_built_shieldable_self(destination, event.tick)
+		local new_data = create_self_shield(destination, event.tick)
 
 		new_data.dirty = true
 		-- new_data.max_health = old_data.max_health
@@ -1714,7 +1711,7 @@ local function on_entity_cloned(event)
 		validate_self_bars(new_data)
 	elseif RANGE_DEF[destination.name] and shield_generators_hash[source.unit_number] then
 		local old_data = shield_generators_hash[source.unit_number]
-		local new_data = on_built_shield_provider(destination, event.tick)
+		local new_data = initialize_shield_provider(destination, event.tick)
 
 		new_data.shield_energy = old_data.shield_energy
 		new_data.max_energy = old_data.max_energy
@@ -1726,7 +1723,7 @@ local function on_entity_cloned(event)
 			destination.energy = 0
 		end
 	elseif RANGE_DEF[destination.name] then
-		on_built_shield_provider(destination, event.tick)
+		initialize_shield_provider(destination, event.tick)
 	end
 end
 
@@ -1843,7 +1840,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 			})
 
 			for i, ent in ipairs(found) do
-				on_built_shieldable_self(ent, event.tick)
+				create_self_shield(ent, event.tick)
 			end
 		end
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
@@ -2011,7 +2008,7 @@ function on_destroyed(index, from_dirty, tick)
 			end
 		end
 
-		destroy_provider_bars(data)
+		hide_shield_provider_bars(data)
 
 		shield_generators_hash[index] = nil
 	elseif shield_generators_bound[index] then -- entity under shield generator destroyed
