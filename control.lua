@@ -97,8 +97,8 @@ local function reload_values()
 	rebuild_cache()
 end
 
-local validate_self_bars, show_shield_provider_bars, validate_shielded_bars
-local destroy_self_bars, hide_shield_provider_bars, destroy_shielded_bars
+local show_self_shield_bars, show_shield_provider_bars, validate_shielded_bars
+local hide_self_shield_bars, hide_shield_provider_bars, destroy_shielded_bars
 local report_error
 
 script.on_configuration_changed(function()
@@ -147,7 +147,7 @@ script.on_configuration_changed(function()
 
 		for unumber, tracked_data in pairs(shields) do
 			if not tracked_data.dirty and tracked_data.shield.valid and tracked_data.shield.is_connected_to_electric_network() then
-				destroy_self_bars(tracked_data)
+				hide_self_shield_bars(tracked_data)
 			end
 		end
 
@@ -168,8 +168,8 @@ script.on_configuration_changed(function()
 			data.shield_health_last_t = data.shield_health_last_t or data.shield_health
 
 			if data.dirty then
-				destroy_self_bars(data)
-				validate_self_bars(data)
+				hide_self_shield_bars(data)
+				show_self_shield_bars(data)
 			end
 		end
 
@@ -221,8 +221,8 @@ script.on_configuration_changed(function()
 			data.last_damage = data.last_damage or 0
 
 			if data.dirty then
-				destroy_self_bars(data)
-				validate_self_bars(data)
+				hide_self_shield_bars(data)
+				show_self_shield_bars(data)
 			end
 		end
 
@@ -360,7 +360,7 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function()
 							data.dirty = true
 							data.disabled = nil
 
-							validate_self_bars(data)
+							show_self_shield_bars(data)
 							table_insert(shields_dirty, data)
 						end
 					end
@@ -792,7 +792,7 @@ script.on_event(defines.events.on_tick, function(event)
 				if _shield.valid then
 					if _shield.is_connected_to_electric_network() then
 						_data.dirty = true
-						validate_self_bars(_data)
+						show_self_shield_bars(_data)
 						table_insert(shields_dirty, _data)
 						lazy_unconnected_self_iter[storage.lazy_key] = nil
 						-- storage.lazy_key = nil
@@ -819,7 +819,7 @@ script.on_event(defines.events.on_tick, function(event)
 			local tracked_data = shields_dirty[i]
 
 			if tracked_data.unit.valid and tracked_data.shield.valid then
-				validate_self_bars(tracked_data)
+				show_self_shield_bars(tracked_data)
 			end
 		end
 	end
@@ -936,7 +936,7 @@ script.on_event(defines.events.on_tick, function(event)
 					table.remove(shields_dirty, i)
 				end
 			else
-				destroy_self_bars(tracked_data)
+				hide_self_shield_bars(tracked_data)
 
 				tracked_data.dirty = false
 				table.remove(shields_dirty, i)
@@ -980,7 +980,7 @@ local function player_select_area(event)
 
 			if not shield.dirty then
 				shield.dirty = true
-				validate_self_bars(shield)
+				show_self_shield_bars(shield)
 				table_insert(shields_dirty, shield)
 			end
 		elseif shield_generators_hash[ent.unit_number] then
@@ -1154,7 +1154,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 			end
 
 			lazy_unconnected_self_iter[unit_number] = nil
-			validate_self_bars(shield)
+			show_self_shield_bars(shield)
 
 			shield.shield_bar.visible = true
 			shield.shield_bar_visual.visible = true
@@ -1472,7 +1472,7 @@ local function create_delegated_shield(entity, tick)
 	end
 end
 
-function validate_self_bars(data)
+function show_self_shield_bars(data)
 	if not data.shield_bar_bg or not data.shield_bar_bg.valid then
 		data.shield_bar_bg = assert(rendering.draw_rectangle({
 			color = values.BACKGROUND_COLOR,
@@ -1527,7 +1527,7 @@ function validate_self_bars(data)
 	end
 end
 
-function destroy_self_bars(data)
+function hide_self_shield_bars(data)
 	if data.shield_bar_bg then
 		data.shield_bar_bg.destroy()
 		data.shield_bar_bg = nil
@@ -1582,7 +1582,7 @@ local function create_self_shield(entity, tick)
 		dirty = true
 	}
 
-	validate_self_bars(tracked_data)
+	show_self_shield_bars(tracked_data)
 
 	tracked_data.shield.destructible = false
 	tracked_data.shield.minable = false
@@ -1665,7 +1665,7 @@ local function on_built(created_entity, tick)
 				tracked_data.dirty = true
 				table_insert(shields_dirty, tracked_data)
 				lazy_unconnected_self_iter[tracked_data.id] = nil
-				validate_self_bars(tracked_data)
+				show_self_shield_bars(tracked_data)
 			end
 		end
 	end
@@ -1707,8 +1707,8 @@ local function on_entity_cloned(event)
 			end
 		end
 
-		destroy_self_bars(new_data)
-		validate_self_bars(new_data)
+		hide_self_shield_bars(new_data)
+		show_self_shield_bars(new_data)
 	elseif RANGE_DEF[destination.name] and shield_generators_hash[source.unit_number] then
 		local old_data = shield_generators_hash[source.unit_number]
 		local new_data = initialize_shield_provider(destination, event.tick)
@@ -1794,7 +1794,7 @@ local function refresh_turret_shields(force)
 
 				if not tracked_data.dirty then
 					tracked_data.dirty = true
-					validate_self_bars(tracked_data)
+					show_self_shield_bars(tracked_data)
 					shields_dirty[nextindex] = tracked_data
 					nextindex = nextindex + 1
 
@@ -1817,7 +1817,7 @@ local function refresh_turret_shields(force)
 
 					if not tracked_data.dirty then
 						tracked_data.dirty = true
-						validate_self_bars(tracked_data)
+						show_self_shield_bars(tracked_data)
 						shields_dirty[nextindex] = tracked_data
 						nextindex = nextindex + 1
 
@@ -1950,7 +1950,7 @@ function on_destroyed(index, from_dirty, tick)
 
 		tracked_data.shield.destroy()
 
-		destroy_self_bars(tracked_data)
+		hide_self_shield_bars(tracked_data)
 
 		if tracked_data.dirty then
 			for i = 1, #shields_dirty do
