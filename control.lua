@@ -1416,7 +1416,7 @@ local function disttosqr(a, b)
 	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)
 end
 
-local function find_closest_provider(force, position, surface)
+local function find_shield_provider(force, position, surface)
 	local found = {}
 
 	if #shield_generators < 400 then
@@ -1466,7 +1466,7 @@ end
 local function on_built_shieldable_entity(entity, tick)
 	if values.blacklist[entity.name] then return end
 
-	local provider_data = find_closest_provider(entity.force, entity.position, entity.surface)
+	local provider_data = find_shield_provider(entity.force, entity.position, entity.surface)
 	if not provider_data then return end
 
 	if bind_shield(entity, provider_data, tick) then
@@ -1978,7 +1978,7 @@ function on_destroyed(index, from_dirty, tick)
 
 			if tracked_data.unit.valid then
 				-- try to rebind to other shield provider
-				local provider_data = find_closest_provider(tracked_data.unit.force, tracked_data.unit.position, tracked_data.unit.surface)
+				local provider_data = find_shield_provider(tracked_data.unit.force, tracked_data.unit.position, tracked_data.unit.surface)
 
 				if provider_data then
 					rebound = true
