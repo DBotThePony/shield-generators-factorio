@@ -19,11 +19,11 @@
 -- DEALINGS IN THE SOFTWARE.
 
 local values = require('__shield-generators__/values')
-_G.shield_util = require('__shield-generators__/util')
 
 require('__shield-generators__/src/runtime/visual_functions')
+require('__shield-generators__/src/runtime/runtime_utils')
 
-local shield_util = shield_util
+local util = util
 
 local shields, shields_dirty, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
 -- shield entity -> entity it protect map
@@ -68,8 +68,8 @@ local function rebuild_speed_cache()
 	local provider = settings.global['shield-generators-hitpoints-base-rate-provider'].value / 60
 
 	for forcename, force in pairs(game.forces) do
-		speed_cache[forcename] = shield_util.recovery_speed_modifier(force.technologies) * provider
-		turret_speed_cache[forcename] = shield_util.turret_recovery_speed_modifier(force.technologies) * turret
+		speed_cache[forcename] = util.recovery_speed_modifier(force.technologies) * provider
+		turret_speed_cache[forcename] = util.turret_recovery_speed_modifier(force.technologies) * turret
 	end
 end
 
@@ -263,7 +263,7 @@ script.on_configuration_changed(function()
 
 	for _, data in pairs(shields) do
 		local old = data.max_health
-		data.max_health = data.unit.max_health * shield_util.max_capacity_modifier_self(data.unit.force.technologies)
+		data.max_health = data.unit.max_health * util.max_capacity_modifier_self(data.unit.force.technologies)
 		data.shield_health = math_min(data.shield_health, data.max_health)
 
 		if old < data.max_health and not data.dirty then
@@ -322,7 +322,7 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function()
 					local entity = data.unit
 
 					data.shield = entity.surface.create_entity({
-						name = shield_util.turret_interface_name(entity.force.technologies),
+						name = util.turret_interface_name(entity.force.technologies),
 						position = entity.position,
 						force = entity.force,
 					})
@@ -334,7 +334,7 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function()
 					data.shield.destructible = false
 					data.shield.minable = false
 					data.shield.rotatable = false
-					data.shield.electric_buffer_size = data.shield.electric_buffer_size * shield_util.turret_capacity_modifier(entity.force.technologies)
+					data.shield.electric_buffer_size = data.shield.electric_buffer_size * util.turret_capacity_modifier(entity.force.technologies)
 					data.max_energy = data.shield.electric_buffer_size - 1
 
 					if data.shield_energy then
@@ -1075,7 +1075,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 
 			if not shield.shield.valid then
 				shield.shield = entity.surface.create_entity({
-					name = shield_util.turret_interface_name(entity.force.technologies),
+					name = util.turret_interface_name(entity.force.technologies),
 					position = entity.position,
 					force = entity.force,
 				})
@@ -1087,7 +1087,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 				shield.shield.destructible = false
 				shield.shield.minable = false
 				shield.shield.rotatable = false
-				shield.shield.electric_buffer_size = shield.shield.electric_buffer_size * shield_util.turret_capacity_modifier(entity.force.technologies)
+				shield.shield.electric_buffer_size = shield.shield.electric_buffer_size * util.turret_capacity_modifier(entity.force.technologies)
 				shield.max_energy = shield.shield.electric_buffer_size - 1
 
 				if shield.shield_energy then
@@ -1102,32 +1102,6 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 	end
 end, values.filter_types)
 
-local function determineDimensions(entity)
-	local width, height
-
-	if entity.prototype.selection_box then
-		if entity.direction == defines.direction.east or entity.direction == defines.direction.west then
-			width = math.abs(entity.prototype.selection_box.left_top.y - entity.prototype.selection_box.right_bottom.y)
-			height = math.abs(entity.prototype.selection_box.right_bottom.x)
-		else
-			width = math.abs(entity.prototype.selection_box.left_top.x - entity.prototype.selection_box.right_bottom.x)
-			height = math.abs(entity.prototype.selection_box.right_bottom.y)
-		end
-	else
-		width = 1
-		height = 0
-	end
-
-	if width < 1 then
-		width = 1
-	end
-
-	height = height + 0.4
-	width = width / 2
-
-	return width, height
-end
-
 function bind_shield(entity, shield_provider, tick)
 	if not entity.destructible then return false end
 	local unit_number = entity.unit_number
@@ -1138,7 +1112,7 @@ function bind_shield(entity, shield_provider, tick)
 
 	if not max_health or max_health <= 0 then return false end
 
-	local width, height = determineDimensions(entity)
+	local width, height = util.determineDimensions(entity)
 
 	if shields[unit_number] then
 		height = height + BAR_HEIGHT * 2
@@ -1147,7 +1121,7 @@ function bind_shield(entity, shield_provider, tick)
 	-- create tracked data for shield state
 	local tracked_data = {
 		health = entity.health,
-		max_health = entity.max_health * shield_util.max_capacity_modifier(shield_provider.unit.force.technologies),
+		max_health = entity.max_health * util.max_capacity_modifier(shield_provider.unit.force.technologies),
 		unit = entity,
 		shield_health = 0, -- how much hitpoints this shield has
 		shield_health_last = 0,
@@ -1193,7 +1167,7 @@ local function initialize_shield_provider(entity, tick)
 
 	destroy_remap[script.register_on_object_destroyed(entity)] = entity.unit_number
 
-	local width, height = determineDimensions(entity)
+	local width, height = util.determineDimensions(entity)
 	height = height + BAR_HEIGHT
 
 	entity.electric_buffer_size = entity.electric_buffer_size * settings.global['shield-generators-provider-capacity'].value
@@ -1315,16 +1289,16 @@ local function create_self_shield(entity, tick)
 
 	destroy_remap[script.register_on_object_destroyed(entity)] = index
 
-	local width, height = determineDimensions(entity)
+	local width, height = util.determineDimensions(entity)
 
 	local tracked_data = {
 		shield = entity.surface.create_entity({
-			name = shield_util.turret_interface_name(entity.force.technologies),
+			name = util.turret_interface_name(entity.force.technologies),
 			position = entity.position,
 			force = entity.force,
 		}),
 
-		max_health = entity.max_health * shield_util.max_capacity_modifier_self(entity.force.technologies),
+		max_health = entity.max_health * util.max_capacity_modifier_self(entity.force.technologies),
 		shield_health = 0,
 		shield_health_last = 0,
 		shield_health_last_t = 0,
@@ -1347,7 +1321,7 @@ local function create_self_shield(entity, tick)
 	tracked_data.shield.destructible = false
 	tracked_data.shield.minable = false
 	tracked_data.shield.rotatable = false
-	tracked_data.shield.electric_buffer_size = tracked_data.shield.electric_buffer_size * shield_util.turret_capacity_modifier(entity.force.technologies)
+	tracked_data.shield.electric_buffer_size = tracked_data.shield.electric_buffer_size * util.turret_capacity_modifier(entity.force.technologies)
 	tracked_data.max_energy = tracked_data.shield.electric_buffer_size - 1
 
 	shields[index] = tracked_data
@@ -1506,8 +1480,8 @@ script.on_event(defines.events.on_robot_built_entity, function(event)
 end, values.filter_types)
 
 local function refresh_turret_shields(force)
-	local classname = shield_util.turret_interface_name(force.technologies)
-	local modif = shield_util.turret_capacity_modifier(force.technologies)
+	local classname = util.turret_interface_name(force.technologies)
+	local modif = util.turret_capacity_modifier(force.technologies)
 
 	local nextindex = #shields_dirty + 1
 
@@ -1597,7 +1571,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 		end
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
 		-- this way because i plan expanding it (adding more HP techs)
-		local mult = shield_util.max_capacity_modifier(event.research.force.technologies)
+		local mult = util.max_capacity_modifier(event.research.force.technologies)
 		local force = event.research.force
 
 		for i = #shield_generators, 1, -1 do
@@ -1638,7 +1612,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 		end
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
 		-- this way because i plan expanding it (adding more HP techs)
-		local mult = shield_util.max_capacity_modifier(event.research.force.technologies)
+		local mult = util.max_capacity_modifier(event.research.force.technologies)
 		local force = event.research.force
 
 		for i = #shield_generators, 1, -1 do
