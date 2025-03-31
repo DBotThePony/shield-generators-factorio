@@ -26,6 +26,7 @@ function is_migration_applied(name)
 	return _G['migration_' .. name .. '_applied'] == true
 end
 
+RANGE_DEF = {}
 local values = require('__shield-generators__/values')
 
 require('__shield-generators__/src/runtime/visual_functions')
@@ -64,7 +65,7 @@ local function lerp(t, a, b)
 	return a + (b - a) * t
 end
 
-local RANGE_DEF = {}
+local RANGE_DEF = RANGE_DEF
 local SEARCH_RANGE
 
 local function rebuild_speed_cache()
@@ -522,7 +523,7 @@ script.on_event(defines.events.on_tick, function(event)
 
 							tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
 
-							set_right_bottom(tracked_data.shield_bar_visual, tracked_data.un, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_healthit, tracked_data.height)
+							set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health, tracked_data.height)
 							set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
 
 							if energy <= 0 then break end
