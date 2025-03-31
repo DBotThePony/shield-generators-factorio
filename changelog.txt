@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.0
+Date: 2024-12-12
+  Features:
+   - Shield health multiplier is now configurable
+  Changes:
+   - Mod now makes use of migration system (along some hacks for mod depend *only* on migrations, so code is the same for both adding mod to existing save and creating brand new save)
+
+---------------------------------------------------------------------------------------------------
 Version: 0.4.2
 Date: 2024-12-12
   Changes:
