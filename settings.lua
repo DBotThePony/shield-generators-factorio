@@ -40,7 +40,7 @@ data:extend({
 	{
 		type = 'double-setting',
 		name = 'shield-generators-multiplier',
-		setting_type = 'startup',
+		setting_type = 'runtime-global',
 		default_value = 100.0,
 		minimum_value = 1.0,
 		order = 'aab',

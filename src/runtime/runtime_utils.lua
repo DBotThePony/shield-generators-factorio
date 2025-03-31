@@ -90,7 +90,7 @@ function util.max_capacity_modifier(technologies)
 end
 
 function util.max_capacity_modifier_self(technologies)
-	return values.DURABILITY_MULTIPLIER / 100.0
+	return settings.startup['shield-generators-multiplier'].value / 100.0
 end
 
 function util.starts_with(a, b)

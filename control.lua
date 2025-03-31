@@ -113,20 +113,6 @@ local report_error
 
 script.on_configuration_changed(function()
 	reload_values()
-
-	local nextDirtyIndex = #shields_dirty + 1
-
-	for _, data in pairs(shields) do
-		local old = data.max_health
-		data.max_health = data.unit.max_health * util.max_capacity_modifier_self(data.unit.force.technologies)
-		data.shield_health = math_min(data.shield_health, data.max_health)
-
-		if old < data.max_health and not data.dirty then
-			data.dirty = true
-			shields_dirty[nextDirtyIndex] = data
-			nextDirtyIndex = nextDirtyIndex + 1
-		end
-	end
 end)
 
 do
@@ -160,7 +146,7 @@ do
 	end)
 end
 
-script.on_event(defines.events.on_runtime_mod_setting_changed, function()
+script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
 	reload_values()
 
 	if storage.keep_interfaces ~= settings.global['shield-generators-keep-interfaces'].value then
@@ -232,6 +218,22 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function()
 				else
 					data.shield_energy = data.shield_energy or 0
 				end
+			end
+		end
+	end
+
+	if event.setting == 'shield-generators-multiplier' then
+		local nextDirtyIndex = #shields_dirty + 1
+
+		for _, data in pairs(shields) do
+			local old = data.max_health
+			data.max_health = data.unit.max_health * util.max_capacity_modifier_self(data.unit.force.technologies)
+			data.shield_health = math_min(data.shield_health, data.max_health)
+
+			if old < data.max_health and not data.dirty then
+				data.dirty = true
+				shields_dirty[nextDirtyIndex] = data
+				nextDirtyIndex = nextDirtyIndex + 1
 			end
 		end
 	end
