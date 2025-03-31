@@ -55,7 +55,7 @@ end
 local RANGE_DEF = {}
 local SEARCH_RANGE
 
-local function rebuild_cache()
+local function rebuild_speed_cache()
 	if not game then return end -- a
 
 	speed_cache, turret_speed_cache = {}, {}
@@ -94,7 +94,7 @@ local function reload_values()
 		end
 	end
 
-	rebuild_cache()
+	rebuild_speed_cache()
 end
 
 local show_self_shield_bars, show_shield_provider_bars, show_delegated_shield_bars
@@ -605,7 +605,7 @@ end
 
 script.on_event(defines.events.on_tick, function(event)
 	if not speed_cache then
-		rebuild_cache()
+		rebuild_speed_cache()
 	end
 
 	-- since inside on_load LuaEntities are invalid
@@ -1849,7 +1849,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 	end
 
 	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
-		rebuild_cache()
+		rebuild_speed_cache()
 	end
 
 	if values.SENTRY_REBUILD_TRIGGERS[event.research.name] then
@@ -1891,7 +1891,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 	end
 
 	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
-		rebuild_cache()
+		rebuild_speed_cache()
 	end
 
 	if values.SENTRY_REBUILD_TRIGGERS[event.research.name] then
@@ -1900,19 +1900,19 @@ script.on_event(defines.events.on_research_reversed, function(event)
 end)
 
 script.on_event(defines.events.on_force_created, function(event)
-	rebuild_cache()
+	rebuild_speed_cache()
 end)
 
 script.on_event(defines.events.on_forces_merged, function(event)
-	rebuild_cache()
+	rebuild_speed_cache()
 end)
 
 script.on_event(defines.events.on_force_reset, function(event)
-	rebuild_cache()
+	rebuild_speed_cache()
 end)
 
 script.on_event(defines.events.on_force_friends_changed, function(event)
-	rebuild_cache()
+	rebuild_speed_cache()
 end)
 
 function on_destroyed(index, from_dirty, tick)
