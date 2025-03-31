@@ -604,9 +604,9 @@ script.on_event(defines.events.on_tick, function(event)
 		end
 	end
 
-	local _value
+	do
+		local _value
 
-	for i = 1, 5 do
 		if storage.lazy_key ~= nil and not lazy_unconnected_self_iter[storage.lazy_key] then
 			storage.lazy_key = nil
 		end
@@ -617,7 +617,10 @@ script.on_event(defines.events.on_tick, function(event)
 			storage.lazy_key, _value = next(lazy_unconnected_self_iter)
 		end
 
-		if _value then
+		local i = 0
+
+		while i < 5 and _value do
+			i = i + 1
 			local _data = shields[storage.lazy_key]
 
 			if _data then
@@ -628,21 +631,22 @@ script.on_event(defines.events.on_tick, function(event)
 						_data.dirty = true
 						show_self_shield_bars(_data)
 						table_insert(shields_dirty, _data)
-						lazy_unconnected_self_iter[storage.lazy_key] = nil
-						-- storage.lazy_key = nil
+						local currnet = storage.lazy_key
+						storage.lazy_key, _value = next(lazy_unconnected_self_iter, storage.lazy_key)
+						lazy_unconnected_self_iter[currnet] = nil
 					end
 				else
-					lazy_unconnected_self_iter[storage.lazy_key] = nil
-					-- storage.lazy_key = nil
+					local currnet = storage.lazy_key
+					storage.lazy_key, _value = next(lazy_unconnected_self_iter, storage.lazy_key)
+					lazy_unconnected_self_iter[currnet] = nil
 					break
 				end
 			else
-				lazy_unconnected_self_iter[storage.lazy_key] = nil
-				storage.lazy_key = nil
+				local currnet = storage.lazy_key
+				storage.lazy_key, _value = next(lazy_unconnected_self_iter, storage.lazy_key)
+				lazy_unconnected_self_iter[currnet] = nil
 				break
 			end
-		else
-			break
 		end
 	end
 

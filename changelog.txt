@@ -5,6 +5,8 @@ Date: 2024-12-12
    - Shield health multiplier is now configurable
   Changes:
    - Mod now makes use of migration system (along some hacks for mod depend *only* on migrations, so code is the same for both adding mod to existing save and creating brand new save)
+  Fixes:
+   - Fixed re-connected to power grid turrets taking way longer than expected to be "discovered" by script as active
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.4.2
