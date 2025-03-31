@@ -184,3 +184,20 @@ function hide_delegated_shield_bars(data)
 		data.shield_bar_visual = nil
 	end
 end
+
+do
+	local _position = {0.0, 0.0}
+
+	local loadable = {
+		entity = nil,
+		offset = _position
+	}
+
+	-- workaround for new rendering API degrading Lua GC performance, imitating old API without causing GC overhead
+	function set_right_bottom(renderable, entity, x, y)
+		_position[1] = x
+		_position[2] = y
+		loadable.entity = entity
+		renderable.right_bottom = loadable
+	end
+end

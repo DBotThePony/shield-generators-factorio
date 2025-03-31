@@ -586,24 +586,10 @@ local function mark_shield_provider_dirty(shield_generator, tick)
 	end
 end
 
-local _position = {}
 local VISUAL_DAMAGE_BAR_SHRINK_SPEED = values.VISUAL_DAMAGE_BAR_SHRINK_SPEED
 local VISUAL_DAMAGE_BAR_WAIT_TICKS = values.VISUAL_DAMAGE_BAR_WAIT_TICKS
 local VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX = values.VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX
-local set_right_bottom
-
--- workaround for new rendering API degrading Lua GC performance, imitating old API without causing GC overhead
-do
-	local loadable = {
-		entity = nil,
-		offset = _position
-	}
-
-	function set_right_bottom(renderable, entity)
-		loadable.entity = entity
-		renderable.right_bottom = loadable
-	end
-end
+local set_right_bottom = set_right_bottom
 
 script.on_event(defines.events.on_tick, function(event)
 	if not speed_cache then
@@ -675,15 +661,8 @@ script.on_event(defines.events.on_tick, function(event)
 
 							tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
 
-							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
-							_position[2] = tracked_data.height
-
-							set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit)
-
-							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
-							-- _position[2] = tracked_data.height
-
-							set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
+							set_right_bottom(tracked_data.shield_bar_visual, tracked_data.un, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_healthit, tracked_data.height)
+							set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
 
 							if energy <= 0 then break end
 						elseif tracked_data.shield_health_last > tracked_data.shield_health then
@@ -695,15 +674,8 @@ script.on_event(defines.events.on_tick, function(event)
 
 							tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
 
-							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
-							_position[2] = tracked_data.height
-
-							set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit)
-
-							_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
-							-- _position[2] = tracked_data.height
-
-							set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
+							set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health, tracked_data.height)
+							set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
 						else
 							hide_delegated_shield_bars(tracked_data)
 
@@ -724,9 +696,7 @@ script.on_event(defines.events.on_tick, function(event)
 					check = true
 				end
 
-				_position[1] = -data.width + 2 * data.width * energy / data.max_energy
-				_position[2] = data.height
-				set_right_bottom(data.battery_bar, data.unit)
+				set_right_bottom(data.battery_bar, data.unit, -data.width + 2 * data.width * energy / data.max_energy, data.height)
 			elseif data.disabled then
 				check = true
 			end
@@ -867,20 +837,9 @@ script.on_event(defines.events.on_tick, function(event)
 
 					tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
 
-					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
-					_position[2] = tracked_data.height
-
-					set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit)
-
-					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
-					-- _position[2] = tracked_data.height
-
-					set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
-
-					_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
-					_position[2] = tracked_data.height + BAR_HEIGHT
-
-					set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit)
+					set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health, tracked_data.height)
+					set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
+					set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy, tracked_data.height + BAR_HEIGHT)
 				-- we don't have any energy, but visual red bar is above current health, shrink it
 				elseif tracked_data.shield_health_last > tracked_data.shield_health then
 					if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
@@ -890,28 +849,15 @@ script.on_event(defines.events.on_tick, function(event)
 
 					tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
 
-					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health
-					_position[2] = tracked_data.height
-
-					set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit)
-
-					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
-					-- _position[2] = tracked_data.height
-
-					set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
+					set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health, tracked_data.height)
+					set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
 				-- at least, we check connection to any electrical grid
 				-- if we are not connected to any electrical grid, stop ticking
 				elseif not tracked_data.shield.is_connected_to_electric_network() or tracked_data.disabled then
 					-- update bars before untracking
-					_position[1] = -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health
-					_position[2] = tracked_data.height
 
-					set_right_bottom(tracked_data.shield_bar, tracked_data.unit)
-
-					_position[1] = -tracked_data.width
-					_position[2] = tracked_data.height + BAR_HEIGHT
-
-					set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit)
+					set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
+					set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, -tracked_data.width, tracked_data.height + BAR_HEIGHT)
 
 					-- remove shield from dirty list if energy empty and is not connected to any power network
 					tracked_data.dirty = false
@@ -922,10 +868,7 @@ script.on_event(defines.events.on_tick, function(event)
 					end
 				end
 			elseif energy < tracked_data.max_energy then
-				_position[1] = -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy
-				_position[2] = tracked_data.height + BAR_HEIGHT
-
-				set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit)
+				set_right_bottom(tracked_data.shield_bar_buffer, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * energy / tracked_data.max_energy, tracked_data.height + BAR_HEIGHT)
 
 				if not tracked_data.shield.is_connected_to_electric_network() then
 					-- remove shield from dirty list if energy half-full/empty and is not connected to any power network
