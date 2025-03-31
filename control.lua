@@ -18,6 +18,13 @@
 -- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 -- DEALINGS IN THE SOFTWARE.
 
+local values = require('__shield-generators__/values')
+_G.shield_util = require('__shield-generators__/util')
+
+require('__shield-generators__/src/runtime/visual_functions')
+
+local shield_util = shield_util
+
 local shields, shields_dirty, shield_generators, shield_generators_dirty, shield_generators_hash, shield_generators_bound, destroy_remap
 -- shield entity -> entity it protect map
 local shield_to_self_map
@@ -27,9 +34,6 @@ local on_destroyed, bind_shield
 
 local speed_cache, turret_speed_cache
 local first_tick_validation = true
-
-local values = require('__shield-generators__/values')
-local shield_util = require('__shield-generators__/util')
 
 -- joules per hitpoint
 local CONSUMPTION_PER_HITPOINT = settings.startup['shield-generators-joules-per-point'].value
@@ -97,8 +101,6 @@ local function reload_values()
 	rebuild_speed_cache()
 end
 
-local show_self_shield_bars, show_shield_provider_bars, show_delegated_shield_bars
-local hide_self_shield_bars, hide_shield_provider_bars, hide_delegated_shield_bars
 local report_error
 
 script.on_configuration_changed(function()
@@ -1183,58 +1185,6 @@ local function determineDimensions(entity)
 	return width, height
 end
 
-function show_delegated_shield_bars(data)
-	if not data.shield_bar_bg or not data.shield_bar_bg.valid then
-		data.shield_bar_bg = assert(rendering.draw_rectangle({
-			color = values.BACKGROUND_COLOR,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
-			right_bottom = {entity = data.unit, offset = {data.width, data.height}},
-		}), 'Unable to create renderable object')
-	end
-
-	if not data.shield_bar_visual or not data.shield_bar_visual.valid then
-		data.shield_bar_visual = assert(rendering.draw_rectangle({
-			color = values.SHIELD_COLOR_VISUAL,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
-			right_bottom = {entity = data.unit, offset = {-data.width, data.height}},
-		}), 'Unable to create renderable object')
-	end
-
-	if not data.shield_bar or not data.shield_bar.valid then
-		data.shield_bar = assert(rendering.draw_rectangle({
-			color = values.SHIELD_COLOR,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
-			right_bottom = {entity = data.unit, offset = {-data.width, data.height}},
-		}), 'Unable to create renderable object')
-	end
-end
-
-function hide_delegated_shield_bars(data)
-	if data.shield_bar_bg then
-		data.shield_bar_bg.destroy()
-		data.shield_bar_bg = nil
-	end
-
-	if data.shield_bar then
-		data.shield_bar.destroy()
-		data.shield_bar = nil
-	end
-
-	if data.shield_bar_visual then
-		data.shield_bar_visual.destroy()
-		data.shield_bar_visual = nil
-	end
-end
-
 function bind_shield(entity, shield_provider, tick)
 	if not entity.destructible then return false end
 	local unit_number = entity.unit_number
@@ -1293,55 +1243,6 @@ local function rebind_shield(tracked_data, shield_provider)
 	shield_provider.tracked_hash[unit_number] = table_insert(shield_provider.tracked, tracked_data)
 
 	return true
-end
-
-function show_shield_provider_bars(data)
-	if not data.battery_bar_bg or not data.battery_bar_bg.valid then
-		data.battery_bar_bg = assert(rendering.draw_rectangle({
-			color = values.BACKGROUND_COLOR,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
-			right_bottom = {entity = data.unit, offset = {data.width, data.height}},
-		}), 'Unable to create renderable object')
-	end
-
-	if not data.battery_bar or not not data.battery_bar.valid then
-		data.battery_bar = assert(rendering.draw_rectangle({
-			color = values.SHIELD_BUFF_COLOR,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
-			right_bottom = {entity = data.unit, offset = {-data.width, data.height}},
-		}), 'Unable to create renderable object')
-	end
-
-	if not data.provider_radius or not data.provider_radius.valid then
-		data.provider_radius = assert(rendering.draw_circle({
-			color = values.SHIELD_RADIUS_COLOR,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			target = data.unit,
-			radius = RANGE_DEF[data.unit.name],
-			draw_on_ground = true,
-			only_in_alt_mode = true,
-		}), 'Unable to create renderable object')
-	end
-end
-
-function hide_shield_provider_bars(data)
-	if data.battery_bar_bg then
-		data.battery_bar_bg.destroy()
-		data.battery_bar_bg = nil
-	end
-
-	if data.battery_bar then
-		data.battery_bar.destroy()
-		data.battery_bar = nil
-	end
 end
 
 local function initialize_shield_provider(entity, tick)
@@ -1462,83 +1363,6 @@ local function create_delegated_shield(entity, tick)
 	if bind_shield(entity, provider_data, tick) then
 		-- mark_shield_provider_dirty(provider_data, tick)
 		mark_shield_provider_child_dirty(provider_data, tick, entity.unit_number, true)
-	end
-end
-
-function show_self_shield_bars(data)
-	if not data.shield_bar_bg or not data.shield_bar_bg.valid then
-		data.shield_bar_bg = assert(rendering.draw_rectangle({
-			color = values.BACKGROUND_COLOR,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
-			right_bottom = {entity = data.unit, offset = {data.width, data.height + BAR_HEIGHT}},
-		}), 'Unable to create renderable object')
-	end
-
-	if not data.shield_bar_visual or not data.shield_bar_visual.valid then
-		data.shield_bar_visual = assert(rendering.draw_rectangle({
-			color = values.SHIELD_COLOR_VISUAL,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
-			right_bottom = {entity = data.unit, offset = {-data.width, data.height}},
-		}), 'Unable to create renderable object')
-	end
-
-	if not data.shield_bar or not data.shield_bar.valid then
-		data.shield_bar = assert(rendering.draw_rectangle({
-			color = values.SHIELD_COLOR,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height - BAR_HEIGHT}},
-			right_bottom = {entity = data.unit, offset = {data.width * (2 * data.shield_health / data.max_health - 1), data.height}},
-		}), 'Unable to create renderable object')
-	end
-
-	if not data.shield_bar_buffer or not data.shield_bar_buffer.valid then
-		data.shield_bar_buffer = assert(rendering.draw_rectangle({
-			color = values.SHIELD_BUFF_COLOR,
-			forces = {data.unit.force},
-			filled = true,
-			surface = data.unit.surface,
-			left_top = {entity = data.unit, offset = {-data.width, data.height}},
-			right_bottom = {
-				entity = data.unit,
-				offset = {
-					data.width * (2 * (
-					(data.disabled or not data.shield.valid) and data.shield_energy or data.shield.energy) /
-					(data.max_energy or data.shield.valid and data.shield.electric_buffer_size > 0 and data.shield.electric_buffer_size or 0xFFFFFFFF) - 1),
-
-					data.height + BAR_HEIGHT
-				},
-			},
-		}), 'Unable to create renderable object')
-	end
-end
-
-function hide_self_shield_bars(data)
-	if data.shield_bar_bg then
-		data.shield_bar_bg.destroy()
-		data.shield_bar_bg = nil
-	end
-
-	if data.shield_bar then
-		data.shield_bar.destroy()
-		data.shield_bar = nil
-	end
-
-	if data.shield_bar_visual then
-		data.shield_bar_visual.destroy()
-		data.shield_bar_visual = nil
-	end
-
-	if data.shield_bar_buffer then
-		data.shield_bar_buffer.destroy()
-		data.shield_bar_buffer = nil
 	end
 end
 
