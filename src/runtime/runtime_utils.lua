@@ -97,4 +97,9 @@ function util.starts_with(a, b)
 	return a:sub(1, #b) == b
 end
 
+function report_error(str)
+	-- game.print('[Shield Generators] Reported managed error: ' .. str)
+	log('Reporting managed error: ' .. str)
+end
+
 return util

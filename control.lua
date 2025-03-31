@@ -18,6 +18,14 @@
 -- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 -- DEALINGS IN THE SOFTWARE.
 
+function mark_migration_applied(name)
+	_G['migration_' .. name .. '_applied'] = true
+end
+
+function is_migration_applied(name)
+	return _G['migration_' .. name .. '_applied'] == true
+end
+
 local values = require('__shield-generators__/values')
 
 require('__shield-generators__/src/runtime/visual_functions')
@@ -104,160 +112,7 @@ end
 local report_error
 
 script.on_configuration_changed(function()
-	storage.shields = storage.shields or {}
-	storage.destroy_remap = storage.destroy_remap or {}
-	storage.shield_generators_bound = storage.shield_generators_bound or {}
-	storage.shield_generators = storage.shield_generators or {}
-
-	shields = storage.shields
-	destroy_remap = storage.destroy_remap
-	shield_generators_bound = storage.shield_generators_bound
-	shield_generators = storage.shield_generators
-	lazy_unconnected_self_iter = storage.lazy_unconnected_self_iter
-
-	if storage.keep_interfaces == nil then
-		storage.keep_interfaces = true
-	end
-
-	if not lazy_unconnected_self_iter then
-		storage.lazy_unconnected_self_iter = {}
-		lazy_unconnected_self_iter = storage.lazy_unconnected_self_iter
-
-		for unumber, data in pairs(shields) do
-			if not data.shield.is_connected_to_electric_network() then
-				lazy_unconnected_self_iter[unumber] = true
-			end
-		end
-	end
-
 	reload_values()
-
-	if not storage.migrated_98277 then
-		for _, data in pairs(shield_generators) do
-			if not data.tracked_dirty then
-				hide_shield_provider_bars(data)
-			end
-
-			if data.tracked then
-				for i, tracked_data in ipairs(data.tracked) do
-					if not tracked_data.dirty then
-						hide_delegated_shield_bars(tracked_data)
-					end
-				end
-			end
-		end
-
-		for unumber, tracked_data in pairs(shields) do
-			if not tracked_data.dirty and tracked_data.shield.valid and tracked_data.shield.is_connected_to_electric_network() then
-				hide_self_shield_bars(tracked_data)
-			end
-		end
-
-		storage.migrated_98277 = true
-	end
-
-	if not storage.delayed_bar_added then
-		::RETRY::
-
-		for unumber, data in pairs(shields) do
-			if not data.unit.valid then
-				report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
-				on_destroyed(unumber, true, 0)
-				goto RETRY
-			end
-
-			data.shield_health_last = data.shield_health_last or data.shield_health
-			data.shield_health_last_t = data.shield_health_last_t or data.shield_health
-
-			if data.dirty then
-				hide_self_shield_bars(data)
-				show_self_shield_bars(data)
-			end
-		end
-
-		::RETRY2::
-
-		for _, data in pairs(shield_generators) do
-			if not data.unit.valid then
-				report_error('Shield provider ' .. data.id .. ' is no longer valid, but present in _G.shield_generators... Removing! This might be a bug.')
-				on_destroyed(data.id, true, 0)
-				goto RETRY2
-			end
-
-			if data.tracked then
-				::RETRY3::
-
-				for i, tracked_data in ipairs(data.tracked) do
-					if not tracked_data.unit.valid then
-						report_error('Shielded entity ' .. tracked_data.unit_number .. ' in provider ' .. data.id .. ' is no longer valid, but present in tracked_data... Removing! This might be a bug.')
-						on_destroyed(tracked_data.unit_number, true, 0)
-						goto RETRY3
-					end
-
-					tracked_data.shield_health_last = tracked_data.shield_health_last or tracked_data.shield_health
-					tracked_data.shield_health_last_t = tracked_data.shield_health_last_t or tracked_data.shield_health
-
-					if tracked_data.dirty then
-						hide_delegated_shield_bars(tracked_data)
-						show_delegated_shield_bars(tracked_data)
-					end
-				end
-			end
-		end
-	end
-
-	if not storage.delayed_bar_added2 or not storage.delayed_bar_added3 or not storage.migrated_tick_check then
-		storage.delayed_bar_added2 = true
-		storage.delayed_bar_added3 = true
-		storage.migrated_tick_check = true
-		::RETRY::
-
-		for unumber, data in pairs(shields) do
-			if not data.unit.valid then
-				report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
-				on_destroyed(unumber, true, 0)
-				goto RETRY
-			end
-
-			data.last_damage_bar = data.last_damage_bar or data.last_damage or 0
-			data.last_damage = data.last_damage or 0
-
-			if data.dirty then
-				hide_self_shield_bars(data)
-				show_self_shield_bars(data)
-			end
-		end
-
-		::RETRY2::
-
-		for _, data in pairs(shield_generators) do
-			if not data.unit.valid then
-				report_error('Shield provider ' .. data.id .. ' is no longer valid, but present in _G.shield_generators... Removing! This might be a bug.')
-				on_destroyed(data.id, true, 0)
-				goto RETRY2
-			end
-
-			if data.tracked then
-				::RETRY3::
-
-				for i, tracked_data in ipairs(data.tracked) do
-					if not tracked_data.unit.valid then
-						report_error('Shielded entity ' .. tracked_data.unit_number .. ' in provider ' .. data.id .. ' is no longer valid, but present in tracked_data... Removing! This might be a bug.')
-						on_destroyed(tracked_data.unit_number, true, 0)
-						goto RETRY3
-					end
-
-					tracked_data.last_damage_bar = tracked_data.last_damage_bar or tracked_data.last_damage or 0
-					tracked_data.last_damage = tracked_data.last_damage or 0
-
-					if tracked_data.dirty then
-						hide_delegated_shield_bars(tracked_data)
-						show_delegated_shield_bars(tracked_data)
-					end
-				end
-			end
-		end
-	end
 
 	local nextDirtyIndex = #shields_dirty + 1
 
@@ -274,33 +129,36 @@ script.on_configuration_changed(function()
 	end
 end)
 
-script.on_init(function()
-	storage.shields = {}
-	storage.destroy_remap = {}
-	storage.shield_generators_bound = {}
-	storage.shield_generators = {}
-	storage.lazy_unconnected_self_iter = {}
+do
+	-- migrations are not applied when world is created for the first time, so we need to apply them manually
+	-- I hope Wube will (re)consider adding an option into info.json for forcefully executing Lua migrations
+	-- when world is created with mod present (so it behaves like mod was added to existing save),
+	-- and I won't have to do this crap
+	local migration_names = {
+		'2025_03_31-initial'
+	}
 
-	storage.migrated_98277 = true
-	storage.delayed_bar_added = true
-	storage.delayed_bar_added2 = true
-	storage.migrated_tick_check = true
-	storage.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
+	local migrations = {}
 
-	shields = storage.shields
-	destroy_remap = storage.destroy_remap
-	shield_generators_bound = storage.shield_generators_bound
-	shield_generators = storage.shield_generators
-	lazy_unconnected_self_iter = storage.lazy_unconnected_self_iter
+	for _, name in ipairs(migration_names) do
+		table_insert(migrations, require('__shield-generators__/src/migrations/' .. name))
+	end
 
-	shield_generators_hash = {}
-	shield_to_self_map = {}
+	script.on_init(function()
+		for i, migrate in ipairs(migrations) do
+			local name = migration_names[i]
+			mark_migration_applied(name)
+			migrate()
+		end
 
-	shield_generators_dirty = {}
-	shields_dirty = {}
+		-- set only this, since intial migration assumes it is true if it is missing
+		storage.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
+		-- reloading values here (should) provide nothing of value, since they will get overwritten by on_load before any read happen from them
+		-- reload_values()
 
-	reload_values()
-end)
+		setup_globals()
+	end)
+end
 
 script.on_event(defines.events.on_runtime_mod_setting_changed, function()
 	reload_values()
@@ -379,15 +237,12 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function()
 	end
 end)
 
-script.on_load(function()
-	-- i could assert these, but
-	-- on_configuration_changed is executed *after* on_load
-	-- meaning migrations are not yet applied
-	shields = storage.shields
-	destroy_remap = storage.destroy_remap
-	shield_generators_bound = storage.shield_generators_bound
-	shield_generators = storage.shield_generators
-	lazy_unconnected_self_iter = storage.lazy_unconnected_self_iter
+function setup_globals()
+	shields = assert(storage.shields)
+	destroy_remap = assert(storage.destroy_remap)
+	shield_generators_bound = assert(storage.shield_generators_bound)
+	shield_generators = assert(storage.shield_generators)
+	lazy_unconnected_self_iter = assert(storage.lazy_unconnected_self_iter)
 
 	shield_generators_dirty = {}
 	shields_dirty = {}
@@ -419,6 +274,10 @@ script.on_load(function()
 	end
 
 	reload_values()
+end
+
+script.on_load(function()
+	setup_globals()
 end)
 
 local function fill_shield_to_self_map()
