@@ -18,14 +18,6 @@
 -- OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 -- DEALINGS IN THE SOFTWARE.
 
-function mark_migration_applied(name)
-	_G['migration_' .. name .. '_applied'] = true
-end
-
-function is_migration_applied(name)
-	return _G['migration_' .. name .. '_applied'] == true
-end
-
 RANGE_DEF = {}
 local values = require('__shield-generators__/values')
 
@@ -110,17 +102,7 @@ local function reload_values()
 	rebuild_speed_cache()
 end
 
-local report_error
-
-script.on_configuration_changed(function()
-	reload_values()
-end)
-
 do
-	-- migrations are not applied when world is created for the first time, so we need to apply them manually
-	-- I hope Wube will (re)consider adding an option into info.json for forcefully executing Lua migrations
-	-- when world is created with mod present (so it behaves like mod was added to existing save),
-	-- and I won't have to do this crap
 	local migration_names = {
 		'2025_03_31-initial'
 	}
@@ -131,17 +113,35 @@ do
 		table_insert(migrations, require('__shield-generators__/src/migrations/' .. name))
 	end
 
+	function are_mod_structures_up_to_date()
+		return storage.mod_structures_version and storage.mod_structures_version >= #migrations
+	end
+
 	script.on_init(function()
 		for i, migrate in ipairs(migrations) do
-			local name = migration_names[i]
-			mark_migration_applied(name)
+			log('Applying migration: ' .. migration_names[i])
 			migrate()
 		end
 
-		-- set only this, since intial migration assumes it is true if it is missing
+		storage.mod_structures_version = #migrations
 		storage.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
-		-- reloading values here (should) provide nothing of value, since they will get overwritten by on_load before any read happen from them
-		-- reload_values()
+
+		setup_globals()
+	end)
+
+	script.on_load(function()
+		setup_globals()
+	end)
+
+	script.on_configuration_changed(function()
+		storage.mod_structures_version = storage.mod_structures_version or 0
+
+		while storage.mod_structures_version < #migrations do
+			local i = storage.mod_structures_version + 1
+			log('Applying migration: ' .. migration_names[i])
+			local migrate = migrations[i]
+			migrate()
+		end
 
 		setup_globals()
 	end)
@@ -241,6 +241,8 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
 end)
 
 function setup_globals()
+	if not are_mod_structures_up_to_date() then return end
+
 	shields = assert(storage.shields)
 	destroy_remap = assert(storage.destroy_remap)
 	shield_generators_bound = assert(storage.shield_generators_bound)
@@ -279,10 +281,6 @@ function setup_globals()
 	reload_values()
 end
 
-script.on_load(function()
-	setup_globals()
-end)
-
 local function fill_shield_to_self_map()
 	shield_to_self_map = {}
 
@@ -291,11 +289,6 @@ local function fill_shield_to_self_map()
 			shield_to_self_map[data.shield.unit_number] = data
 		end
 	end
-end
-
-function report_error(str)
-	-- game.print('[Shield Generators] Reported managed error: ' .. str)
-	log('Reporting managed error: ' .. str)
 end
 
 local function start_ticking_shield_generator(shield_generator, tick)
