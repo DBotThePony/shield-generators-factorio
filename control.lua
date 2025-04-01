@@ -138,6 +138,7 @@ do
 
 		while storage.mod_structures_version < #migrations do
 			local i = storage.mod_structures_version + 1
+			storage.mod_structures_version = i
 			log('Applying migration: ' .. migration_names[i])
 			local migrate = migrations[i]
 			migrate()
@@ -224,21 +225,50 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
 	end
 
 	if event.setting == 'shield-generators-multiplier' then
-		local nextDirtyIndex = #shields_dirty + 1
+		refresh_self_shields_max_health(nil, event.tick)
+		refresh_provider_shields_max_health(nil, event.tick)
+	end
+end)
+
+function refresh_self_shields_max_health(force, tick)
+	local nextDirtyIndex = #shields_dirty + 1
+
+	if force == nil then
+		local mults = {}
+
+		for name, force in pairs(game.forces) do
+			mults[name] = util.max_capacity_modifier_self(force.technologies)
+		end
 
 		for _, data in pairs(shields) do
 			local old = data.max_health
-			data.max_health = data.unit.max_health * util.max_capacity_modifier_self(data.unit.force.technologies)
+			data.max_health = data.unit.max_health * mults[data.unit.force.name]
 			data.shield_health = math_min(data.shield_health, data.max_health)
 
 			if old < data.max_health and not data.dirty then
 				data.dirty = true
 				shields_dirty[nextDirtyIndex] = data
+				show_self_shield_bars(data)
+				nextDirtyIndex = nextDirtyIndex + 1
+			end
+		end
+	else
+		local mult = util.max_capacity_modifier_self(force.technologies)
+
+		for _, data in pairs(shields) do
+			local old = data.max_health
+			data.max_health = data.unit.max_health * mult
+			data.shield_health = math_min(data.shield_health, data.max_health)
+
+			if old < data.max_health and not data.dirty then
+				data.dirty = true
+				shields_dirty[nextDirtyIndex] = data
+				show_self_shield_bars(data)
 				nextDirtyIndex = nextDirtyIndex + 1
 			end
 		end
 	end
-end)
+end
 
 function setup_globals()
 	if not are_mod_structures_up_to_date() then return end
@@ -1416,6 +1446,49 @@ local function refresh_turret_shields(force)
 	end
 end
 
+function refresh_provider_shields_max_health(force, tick)
+	-- this way because i plan expanding it (adding more HP techs)
+	if force ~= nil then
+		local mult = util.max_capacity_modifier(force.technologies)
+
+		for i = #shield_generators, 1, -1 do
+			local data = shield_generators[i]
+
+			if not data.unit.valid then
+				on_destroyed(data.id, false, tick)
+			elseif data.unit.force == force then
+				for i2 = 1, #data.tracked do
+					data.tracked[i2].max_health = data.tracked[i2].unit.max_health * mult
+					data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
+				end
+
+				mark_shield_provider_dirty(data, tick)
+			end
+		end
+	else
+		local mults = {}
+
+		for name, force in pairs(game.forces) do
+			mults[name] = util.max_capacity_modifier(force.technologies)
+		end
+
+		for i = #shield_generators, 1, -1 do
+			local data = shield_generators[i]
+
+			if not data.unit.valid then
+				on_destroyed(data.id, false, tick)
+			else
+				for i2 = 1, #data.tracked do
+					data.tracked[i2].max_health = data.tracked[i2].unit.max_health * mults[data.unit.force.name]
+					data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
+				end
+
+				mark_shield_provider_dirty(data, tick)
+			end
+		end
+	end
+end
+
 script.on_event(defines.events.on_research_finished, function(event)
 	if event.research.name == 'shield-generators-turret-shields-basics' then
 		for name, surface in pairs(game.surfaces) do
@@ -1429,23 +1502,7 @@ script.on_event(defines.events.on_research_finished, function(event)
 			end
 		end
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
-		-- this way because i plan expanding it (adding more HP techs)
-		local mult = util.max_capacity_modifier(event.research.force.technologies)
-		local force = event.research.force
-
-		for i = #shield_generators, 1, -1 do
-			local data = shield_generators[i]
-
-			if not data.unit.valid then
-				on_destroyed(data.id, false, event.tick)
-			elseif data.unit.force == force then
-				for i2 = 1, #data.tracked do
-					data.tracked[i2].max_health = data.tracked[i2].unit.max_health * mult
-				end
-
-				mark_shield_provider_dirty(data, event.tick)
-			end
-		end
+		refresh_provider_shields_max_health(event.research.force, event.tick)
 	end
 
 	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
@@ -1470,24 +1527,7 @@ script.on_event(defines.events.on_research_reversed, function(event)
 			end
 		end
 	elseif event.research.name == 'shield-generators-superconducting-shields' then
-		-- this way because i plan expanding it (adding more HP techs)
-		local mult = util.max_capacity_modifier(event.research.force.technologies)
-		local force = event.research.force
-
-		for i = #shield_generators, 1, -1 do
-			local data = shield_generators[i]
-
-			if not data.unit.valid then
-				on_destroyed(data.id, false, event.tick)
-			elseif data.unit.force == force then
-				for i2 = 1, #data.tracked do
-					data.tracked[i2].max_health = data.tracked[i2].unit.max_health * mult
-					data.tracked[i2].shield_health = math_min(data.tracked[i2].max_health, data.tracked[i2].shield_health)
-				end
-
-				mark_shield_provider_dirty(data, event.tick)
-			end
-		end
+		refresh_provider_shields_max_health(event.research.force, event.tick)
 	end
 
 	if values.TECH_REBUILD_TRIGGERS[event.research.name] then
