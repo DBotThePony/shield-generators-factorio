@@ -7,6 +7,7 @@ Date: 2024-12-12
    - Mod data structure migration now should be more robust
   Fixes:
    - Fixed re-connected to power grid turrets taking way longer than expected to be "discovered" by script as active
+   - Saves created in Factorio 1.1 are now properly migrated from
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.4.2
