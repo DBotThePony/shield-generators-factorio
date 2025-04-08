@@ -114,16 +114,25 @@ do
 	end
 
 	function are_mod_structures_up_to_date()
-		return storage.mod_structures_version and storage.mod_structures_version >= #migrations
+		if not storage.mod_structures_migrations then return false end
+
+		for _, name in ipairs(migration_names) do
+			if not storage.mod_structures_migrations[name] then return false end
+		end
+
+		return true
 	end
 
 	script.on_init(function()
+		storage.mod_structures_migrations = {}
+
 		for i, migrate in ipairs(migrations) do
-			log('Applying migration: ' .. migration_names[i])
+			local name = migration_names[i]
+			storage.mod_structures_migrations[name] = true
+			log('Applying migration: ' .. name)
 			migrate()
 		end
 
-		storage.mod_structures_version = #migrations
 		storage.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
 
 		setup_globals()
@@ -134,14 +143,14 @@ do
 	end)
 
 	script.on_configuration_changed(function()
-		storage.mod_structures_version = storage.mod_structures_version or 0
+		storage.mod_structures_migrations = storage.mod_structures_migrations or {}
 
-		while storage.mod_structures_version < #migrations do
-			local i = storage.mod_structures_version + 1
-			storage.mod_structures_version = i
-			log('Applying migration: ' .. migration_names[i])
-			local migrate = migrations[i]
-			migrate()
+		for i, name in ipairs(migration_names) do
+			if not storage.mod_structures_migrations[name] then
+				log('Applying migration: ' .. name)
+				local migrate = migrations[i]
+				migrate()
+			end
 		end
 
 		setup_globals()
