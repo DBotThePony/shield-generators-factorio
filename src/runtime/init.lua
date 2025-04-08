@@ -6,7 +6,7 @@ local migration_names = {
 local migrations = {}
 
 for _, name in ipairs(migration_names) do
-	table_insert(migrations, require('__shield-generators__/src/migrations/' .. name))
+	table.insert(migrations, require('__shield-generators__/src/migrations/' .. name))
 end
 
 function are_mod_structures_up_to_date()
