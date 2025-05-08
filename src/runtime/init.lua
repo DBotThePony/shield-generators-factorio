@@ -21,20 +21,13 @@ function are_mod_structures_up_to_date()
 end
 
 script.on_init(function()
-	storage.shields = {}
-	storage.destroy_remap = {}
-	storage.shield_generators_bound = {}
-	storage.shield_generators = {}
-	storage.lazy_unconnected_self_iter = {}
 	storage.mod_structures_migrations = {}
 
 	for _, name in ipairs(migration_names) do
 		storage.mod_structures_migrations[name] = true
 	end
 
-	storage.keep_interfaces = settings.global['shield-generators-keep-interfaces'].value
-
-	setup_globals()
+	init_globals()
 end)
 
 script.on_load(function()

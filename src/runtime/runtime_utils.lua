@@ -102,4 +102,24 @@ function report_error(str)
 	log('Reporting managed error: ' .. str)
 end
 
+function util.distance(a, b)
+	return math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y))
+end
+
+function util.disttosqr(a, b)
+	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)
+end
+
+function util.lerp(t, a, b)
+	if t < 0 then return a end
+	if t >= 1 then return b end
+	return a + (b - a) * t
+end
+
+function util.insert(tab, value)
+	local insert = #tab + 1
+	tab[insert] = value
+	return insert
+end
+
 return util

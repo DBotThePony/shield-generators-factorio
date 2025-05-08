@@ -9,6 +9,12 @@ return function()
 	storage.shield_generators_bound = storage.shield_generators_bound or {}
 	storage.shield_generators = storage.shield_generators or {}
 
+	for unumber, data in pairs(shields) do
+		if data.unit.valid and data.shield.valid and should_self_shield_tick(data) then
+			show_self_shield_bars(data)
+		end
+	end
+
 	if storage.keep_interfaces == nil then
 		storage.keep_interfaces = true
 	end
