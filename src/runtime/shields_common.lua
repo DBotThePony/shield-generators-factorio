@@ -50,11 +50,7 @@ local function player_select_area(event)
 
 			shield.disabled = not shield.disabled
 
-			if not shield.dirty then
-				shield.dirty = true
-				show_self_shield_bars(shield)
-				table.insert(shields_dirty, shield)
-			end
+			begin_ticking_self_shield(shield)
 		elseif shield_generators_hash[ent.unit_number] then
 			shield = shield_generators_hash[ent.unit_number]
 
