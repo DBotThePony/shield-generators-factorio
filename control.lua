@@ -1129,6 +1129,7 @@ local function create_delegated_shield(entity, tick)
 end
 
 local function create_self_shield(entity, tick)
+	if values.self_blacklist[entity.name] then return end
 	local index = entity.unit_number
 	if shields[index] or entity.max_health <= 0 then return end -- wut
 
@@ -1206,7 +1207,10 @@ local function on_built(created_entity, tick)
 		return
 	end
 
-	if values.allowed_types_self[created_entity.type] and (not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched) then
+	if
+		values.allowed_types_self[created_entity.type] and
+		(not created_entity.force or created_entity.force.technologies['shield-generators-turret-shields-basics'].researched)
+	then
 		-- create turret shield first
 		create_self_shield(created_entity, tick)
 	end
@@ -1261,6 +1265,8 @@ local function on_entity_cloned(event)
 	elseif shields[source.unit_number] then
 		local old_data = shields[source.unit_number]
 		local new_data = create_self_shield(destination, event.tick)
+
+		if not new_data then return end
 
 		new_data.dirty = true
 		-- new_data.max_health = old_data.max_health

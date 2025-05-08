@@ -209,9 +209,14 @@ values._allowed_types = {
 }
 
 values.blacklist = {}
+values.self_blacklist = {}
 
 values._blacklist = {
-	'tf-pole' -- tidy factory pole
+	'tf-pole', -- tidy factory pole
+}
+
+values._self_blacklist = {
+	'chcs-heliostat-mirror', -- solar panel from solar laser
 }
 
 values.filter_types = {}
@@ -234,6 +239,10 @@ end
 
 for i, _type in ipairs(values._blacklist) do
 	values.blacklist[_type] = true
+end
+
+for i, _type in ipairs(values._self_blacklist) do
+	values.self_blacklist[_type] = true
 end
 
 for _type in pairs(values.allowed_types_self) do

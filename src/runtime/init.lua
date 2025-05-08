@@ -49,8 +49,10 @@ script.on_configuration_changed(function()
 			log('Applying migration: ' .. name)
 			local migrate = migrations[i]
 			migrate()
+			storage.mod_structures_migrations[name] = true
 		end
 	end
 
+	assert(are_mod_structures_up_to_date())
 	setup_globals()
 end)
