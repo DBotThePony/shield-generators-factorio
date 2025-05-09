@@ -432,7 +432,7 @@ end)
 -- CLONING
 local iface_name_length = #'shield-generators-interface'
 
-local function destroy_shield(index)
+local function destroy_shield(index, tick)
 	-- entity with internal shield destroyed
 	if shields[index] then
 		local tracked_data = shields[index]
@@ -467,6 +467,19 @@ local function destroy_shield(index)
 
 		lazy_unconnected_self_iter[index] = nil
 		shields[index] = nil
+
+		if shield_generators_bound[index] then
+			local child = shield_generators_bound[index].tracked[index]
+
+			if child then
+				child.height = child.height - values.BAR_HEIGHT * 2
+
+				if child.shield_bar then
+					hide_delegated_shield_bars(child)
+					show_delegated_shield_bars(child)
+				end
+			end
+		end
 	end
 end
 
@@ -545,8 +558,10 @@ script_hook(defines.events.on_research_reversed, function(event)
 				type = values._allowed_types_self,
 			})
 
+			local tick = event.tick
+
 			for i, ent in ipairs(found) do
-				destroy_shield(ent.unit_number)
+				destroy_shield(ent.unit_number, tick)
 			end
 		end
 	end
