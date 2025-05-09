@@ -5,7 +5,7 @@ Date: 2024-12-12
    - Shield health multiplier is now configurable
   Changes:
    - Mod data structure migration was greatly improved
-   - Concentrated Solar entities were blacklisted
+   - Concentrated Solar reflectors are now blacklisted from having self shield (previously they had shield because they use turret base)
    - Shield provider internal data structure was simplified and should generally tick faster
   Fixes:
    - Fixed re-connected to power grid turrets taking way longer than expected to be "discovered" by script as active
