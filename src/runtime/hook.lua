@@ -152,9 +152,9 @@ do
 		callbacks[n] = fn
 	end
 
-	function on_destroyed(index, from_dirty, tick)
+	function on_destroyed(index, tick)
 		for i = 1, n do
-			callbacks[i](index, from_dirty, tick)
+			callbacks[i](index, tick)
 		end
 	end
 
@@ -168,7 +168,7 @@ do
 
 	script_hook(defines.events.on_object_destroyed, function(event)
 		if not destroy_remap[event.registration_number] then return end
-		on_destroyed(destroy_remap[event.registration_number], false, event.tick)
+		on_destroyed(destroy_remap[event.registration_number], event.tick)
 		destroy_remap[event.registration_number] = nil
 	end)
 

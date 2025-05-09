@@ -1,4 +1,5 @@
 
+-- factorio 1.1 migration
 return function()
 	local type = type
 	local get_object_by_id = rendering.get_object_by_id

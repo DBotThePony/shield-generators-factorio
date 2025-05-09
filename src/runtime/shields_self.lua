@@ -5,7 +5,6 @@ local shields_dirty = {}
 -- storage
 local shields
 local shield_generators_bound
-local shield_generators
 local lazy_unconnected_self_iter
 
 -- cahce
@@ -27,7 +26,6 @@ end)
 
 on_setup_globals(function()
 	shields = assert(storage.shields)
-	shield_generators = assert(storage.shield_generators)
 	shield_generators_bound = assert(storage.shield_generators_bound)
 	lazy_unconnected_self_iter = assert(storage.lazy_unconnected_self_iter)
 
@@ -99,7 +97,7 @@ script_hook(defines.events.on_runtime_mod_setting_changed, function(event)
 			for unumber, data in pairs(shields) do
 				if not data.unit.valid then
 					report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
-					on_destroyed(unumber, true, 0)
+					on_destroyed(unumber, 0)
 					goto RETRY
 				end
 
@@ -134,7 +132,7 @@ script_hook(defines.events.on_runtime_mod_setting_changed, function(event)
 			for unumber, data in pairs(shields) do
 				if not data.unit.valid then
 					report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
-					on_destroyed(unumber, true, 0)
+					on_destroyed(unumber, 0)
 					goto RETRY
 				end
 
@@ -253,10 +251,10 @@ function create_self_shield(entity, tick)
 	-- case: we got self shield after getting shield from shield provider
 	-- update bars for them to not overlap with ours
 	if shield_generators_bound[index] then -- entity under shield generator destroyed
-		local shield_generator = shield_generators_hash[shield_generators_bound[index]]
+		local shield_generator = shield_generators_bound[index]
 
 		if shield_generator then
-			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[index]]
+			local tracked_data = shield_generator.tracked[index]
 
 			if tracked_data then
 				tracked_data.height = tracked_data.height + values.BAR_HEIGHT * 2
@@ -434,6 +432,46 @@ end)
 -- CLONING
 local iface_name_length = #'shield-generators-interface'
 
+local function destroy_shield(index)
+	-- entity with internal shield destroyed
+	if shields[index] then
+		local tracked_data = shields[index]
+
+		if tracked_data.shield and tracked_data.shield.valid then
+			shield_to_self_map()[tracked_data.shield.unit_number] = nil
+		else
+			report_error('Unexpected self shield deletion of now deleted unit ' .. index .. '. Getting around it is slow!')
+
+			local shield_to_self_map = shield_to_self_map()
+
+			for key, value  in pairs(shield_to_self_map) do
+				if value == tracked_data then
+					shield_to_self_map[key] = nil
+					break
+				end
+			end
+		end
+
+		tracked_data.shield.destroy()
+
+		hide_self_shield_bars(tracked_data)
+
+		if tracked_data.dirty then
+			for i = 1, #shields_dirty do
+				if shields_dirty[i] == tracked_data then
+					table.remove(shields_dirty, i)
+					break
+				end
+			end
+		end
+
+		lazy_unconnected_self_iter[index] = nil
+		shields[index] = nil
+	end
+end
+
+listen_on_destroyed(destroy_shield)
+
 script_hook(defines.events.on_entity_cloned, function(event)
 	local source = event.source
 	local destination = event.destination
@@ -508,7 +546,7 @@ script_hook(defines.events.on_research_reversed, function(event)
 			})
 
 			for i, ent in ipairs(found) do
-				on_destroyed(ent.unit_number, false, event.tick)
+				destroy_shield(ent.unit_number)
 			end
 		end
 	end
@@ -682,7 +720,7 @@ function tick_self_shields(tick, delay, max_time, max_speed)
 			end
 		else
 			report_error('Late removal of self-shielded entity with id ' .. tracked_data.id)
-			on_destroyed(tracked_data.id, false, tick)
+			on_destroyed(tracked_data.id, tick)
 
 			if shields_dirty[i] == tracked_data then
 				table.remove(shields_dirty, i)
@@ -690,41 +728,3 @@ function tick_self_shields(tick, delay, max_time, max_speed)
 		end
 	end
 end
-
-listen_on_destroyed(function(index, from_dirty, tick)
-	-- entity with internal shield destroyed
-	if shields[index] then
-		local tracked_data = shields[index]
-
-		if tracked_data.shield and tracked_data.shield.valid then
-			shield_to_self_map()[tracked_data.shield.unit_number] = nil
-		else
-			report_error('Unexpected self shield deletion of now deleted unit ' .. index .. '. Getting around it is slow!')
-
-			local shield_to_self_map = shield_to_self_map()
-
-			for key, value  in pairs(shield_to_self_map) do
-				if value == tracked_data then
-					shield_to_self_map[key] = nil
-					break
-				end
-			end
-		end
-
-		tracked_data.shield.destroy()
-
-		hide_self_shield_bars(tracked_data)
-
-		if tracked_data.dirty then
-			for i = 1, #shields_dirty do
-				if shields_dirty[i] == tracked_data then
-					table.remove(shields_dirty, i)
-					break
-				end
-			end
-		end
-
-		lazy_unconnected_self_iter[index] = nil
-		shields[index] = nil
-	end
-end)

@@ -61,7 +61,7 @@ return function()
 		for unumber, data in pairs(storage.shields) do
 			if not data.unit.valid then
 				report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
-				on_destroyed(unumber, true, 0)
+				on_destroyed(unumber, 0)
 				goto RETRY
 			end
 
@@ -79,7 +79,7 @@ return function()
 		for _, data in pairs(storage.shield_generators) do
 			if not data.unit.valid then
 				report_error('Shield provider ' .. data.id .. ' is no longer valid, but present in _G.shield_generators... Removing! This might be a bug.')
-				on_destroyed(data.id, true, 0)
+				on_destroyed(data.id, 0)
 				goto RETRY2
 			end
 
@@ -89,7 +89,7 @@ return function()
 				for i, tracked_data in ipairs(data.tracked) do
 					if not tracked_data.unit.valid then
 						report_error('Shielded entity ' .. tracked_data.unit_number .. ' in provider ' .. data.id .. ' is no longer valid, but present in tracked_data... Removing! This might be a bug.')
-						on_destroyed(tracked_data.unit_number, true, 0)
+						on_destroyed(tracked_data.unit_number, 0)
 						goto RETRY3
 					end
 
@@ -114,7 +114,7 @@ return function()
 		for unumber, data in pairs(storage.shields) do
 			if not data.unit.valid then
 				report_error('Shielded entity ' .. unumber .. ' is no longer valid, but present in _G.shields... Removing! This might be a bug.')
-				on_destroyed(unumber, true, 0)
+				on_destroyed(unumber, 0)
 				goto RETRY
 			end
 
@@ -132,7 +132,7 @@ return function()
 		for _, data in pairs(storage.shield_generators) do
 			if not data.unit.valid then
 				report_error('Shield provider ' .. data.id .. ' is no longer valid, but present in _G.shield_generators... Removing! This might be a bug.')
-				on_destroyed(data.id, true, 0)
+				on_destroyed(data.id, 0)
 				goto RETRY2
 			end
 
@@ -142,7 +142,7 @@ return function()
 				for i, tracked_data in ipairs(data.tracked) do
 					if not tracked_data.unit.valid then
 						report_error('Shielded entity ' .. tracked_data.unit_number .. ' in provider ' .. data.id .. ' is no longer valid, but present in tracked_data... Removing! This might be a bug.')
-						on_destroyed(tracked_data.unit_number, true, 0)
+						on_destroyed(tracked_data.unit_number, 0)
 						goto RETRY3
 					end
 

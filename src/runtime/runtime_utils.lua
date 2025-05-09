@@ -122,4 +122,14 @@ function util.insert(tab, value)
 	return insert
 end
 
+function util.count(tab)
+	local i = 0
+
+	for a, b in pairs(tab) do
+		i = i + 1
+	end
+
+	return i
+end
+
 return util

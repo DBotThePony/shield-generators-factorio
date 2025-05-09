@@ -1,8 +1,6 @@
 
--- derative
-local shield_generators_hash = shield_generators_hash
-
 -- storage
+local shield_generators
 local shields
 local shield_generators_bound
 
@@ -15,6 +13,7 @@ local math_max = math.max
 
 on_setup_globals(function()
 	shields = assert(storage.shields)
+	shield_generators = assert(storage.shield_generators)
 	shield_generators_bound = assert(storage.shield_generators_bound)
 end)
 
@@ -51,8 +50,8 @@ local function player_select_area(event)
 			shield.disabled = not shield.disabled
 
 			begin_ticking_self_shield(shield)
-		elseif shield_generators_hash[ent.unit_number] then
-			shield = shield_generators_hash[ent.unit_number]
+		elseif shield_generators[ent.unit_number] then
+			shield = shield_generators[ent.unit_number]
 
 			if shield.disabled then
 				ent.electric_buffer_size = shield.max_energy + 1
@@ -66,11 +65,7 @@ local function player_select_area(event)
 			end
 
 			shield.disabled = not shield.disabled
-
-			if not shield.dirty then
-				shield.dirty = true
-				table.insert(shield_generators_dirty, shield)
-			end
+			begin_ticking_shield_generator(shield)
 		end
 	end
 end
@@ -87,10 +82,10 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 	-- bound shield generator provider
 	-- process it before self shield
 	if shield_generators_bound[unit_number] then
-		local shield_generator = shield_generators_hash[shield_generators_bound[unit_number]]
+		local shield_generator = shield_generators_bound[unit_number]
 
 		if shield_generator then
-			local tracked_data = shield_generator.tracked[shield_generator.tracked_hash[unit_number]]
+			local tracked_data = shield_generator.tracked[unit_number]
 
 			if tracked_data then
 				if final_damage_amount >= 1 then
@@ -131,20 +126,11 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 					tracked_data.shield_health = 0
 				end
 
-				-- not dirty? mark shield generator as dirty
-				if not shield_generator.tracked_dirty then
-					-- mark_shield_provider_dirty(shield_generator, event.tick)
+				if not tracked_data.ticking then
 					mark_shield_provider_child_dirty(shield_generator, event.tick, unit_number)
-
-				-- shield is dirty but we are not?
-				-- mark us as dirty
-				elseif not tracked_data.dirty then
-					tracked_data.dirty = true
-					table.insert(shield_generator.tracked_dirty, shield_generator.tracked_hash[unit_number])
-					show_delegated_shield_bars(tracked_data)
 				end
 			else
-				report_error('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.id .. ', but it is not present in tracked[]!')
+				report_error('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.unit_number .. ', but it is not present in tracked[]!')
 			end
 		else
 			report_error('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generators_bound[unit_number] .. ', but this generator is invalid!')

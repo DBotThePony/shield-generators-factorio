@@ -1,14 +1,18 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.5.2
+Version: 0.5.3
 Date: 2024-12-12
   Features:
    - Shield health multiplier is now configurable
   Changes:
-   - Mod data structure migration now should be more robust
+   - Mod data structure migration was greatly improved
    - Concentrated Solar entities were blacklisted
+   - Shield provider internal data structure was simplified and should generally tick faster
   Fixes:
    - Fixed re-connected to power grid turrets taking way longer than expected to be "discovered" by script as active
    - Saves created in Factorio 1.1 are now properly migrated from
+   - Disabling shields provided by shield generator no longer crashes the game
+   - Cloning shield generators have been slightly improved, it now properly copies its own shield upon clone
+   - Reversing (unresearching through editor) "turret shield generators" research no longer robs them off provider shields if they have one
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.4.2
