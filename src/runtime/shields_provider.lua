@@ -461,6 +461,18 @@ script_hook(defines.events.on_entity_cloned, function(event)
 	end
 end)
 
+local function tick_visuals(tick, tracked_data)
+	if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
+		tracked_data.shield_health_last_t = tracked_data.shield_health
+		tracked_data.last_damage_bar = tick
+	end
+
+	tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
+
+	set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health, tracked_data.height)
+	set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
+end
+
 function tick_shield_providers(tick, delay, max_time, max_speed)
 	if not speed_cache then
 		rebuild_shield_provider_speed_cache()
@@ -517,29 +529,11 @@ function tick_shield_providers(tick, delay, max_time, max_speed)
 						tracked_data.shield_health = tracked_data.shield_health + delta
 						energy = energy - delta * CONSUMPTION_PER_HITPOINT
 
-						if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
-							tracked_data.shield_health_last_t = tracked_data.shield_health
-							tracked_data.last_damage_bar = tick
-						end
-
-						tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
-
-						set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health, tracked_data.height)
-						set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
-
+						tick_visuals(tick, tracked_data)
 						if energy <= 0 then break end
 					elseif tracked_data.shield_health_last > tracked_data.shield_health then
 						run_dirty = true
-
-						if tick - tracked_data.last_damage > VISUAL_DAMAGE_BAR_WAIT_TICKS or tick - tracked_data.last_damage_bar > VISUAL_DAMAGE_BAR_WAIT_TICKS_MAX then
-							tracked_data.shield_health_last_t = tracked_data.shield_health
-							tracked_data.last_damage_bar = tick
-						end
-
-						tracked_data.shield_health_last = math_max(tracked_data.shield_health_last_t, tracked_data.shield_health_last - tracked_data.max_health * VISUAL_DAMAGE_BAR_SHRINK_SPEED)
-
-						set_right_bottom(tracked_data.shield_bar_visual, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health_last / tracked_data.max_health, tracked_data.height)
-						set_right_bottom(tracked_data.shield_bar, tracked_data.unit, -tracked_data.width + 2 * tracked_data.width * tracked_data.shield_health / tracked_data.max_health, tracked_data.height)
+						tick_visuals(tick, tracked_data)
 					else
 						hide_delegated_shield_bars(tracked_data)
 						table_insert(stopTickingChildren, child_unumber)
@@ -569,8 +563,29 @@ function tick_shield_providers(tick, delay, max_time, max_speed)
 			end
 
 			set_right_bottom(data.battery_bar, data.unit, -data.width + 2 * data.width * energy / data.max_energy, data.height)
-		elseif data.disabled then
-			table_insert(stopTicking, data)
+		else
+			local any_updates = false
+			local removedChildren = {}
+
+			for child_unumber, tracked_data in pairs(data.tracked_dirty) do
+				if tracked_data.unit.valid then
+					if tracked_data.shield_health_last > tracked_data.shield_health then
+						any_updates = true
+						tick_visuals(tick, tracked_data)
+					end
+				else
+					report_error('Encountered invalid unit ' .. child_unumber .. ' in shield generator ' .. data.unit_number)
+					table_insert(removedChildren, child_unumber)
+				end
+			end
+
+			for _, child_unumber in ipairs(removedChildren) do
+				on_destroyed(child_unumber, tick)
+			end
+
+			if not any_updates then
+				table_insert(stopTicking, data)
+			end
 		end
 
 		if data.disabled then

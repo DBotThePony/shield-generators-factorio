@@ -126,9 +126,7 @@ script.on_event(defines.events.on_entity_damaged, function(event)
 					tracked_data.shield_health = 0
 				end
 
-				if not tracked_data.ticking then
-					mark_shield_provider_child_dirty(shield_generator, event.tick, unit_number)
-				end
+				mark_shield_provider_child_dirty(shield_generator, event.tick, unit_number)
 			else
 				report_error('Entity ' .. unit_number .. ' appears to be bound to generator ' .. shield_generator.unit_number .. ', but it is not present in tracked[]!')
 			end

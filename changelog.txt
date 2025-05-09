@@ -10,9 +10,10 @@ Date: 2024-12-12
   Fixes:
    - Fixed re-connected to power grid turrets taking way longer than expected to be "discovered" by script as active
    - Saves created in Factorio 1.1 are now properly migrated from
-   - Disabling shields provided by shield generator no longer crashes the game
+   - Disabling shield generator no longer crashes the game
    - Cloning shield generators have been slightly improved, it now properly copies its own shield upon clone
    - Reversing (unresearching through editor) "turret shield generators" research no longer robs them off provider shields if they have one
+   - Visuals of shield generators no longer stop updating when shield generator energy drops to zero
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.4.2
