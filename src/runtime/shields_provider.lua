@@ -113,7 +113,7 @@ function refresh_provider_shields_max_health(force, tick)
 
 		for unumber, data in pairs(shield_generators) do
 			if not data.unit.valid then
-				table.insert(toRemove, unumber)
+				table_insert(toRemove, unumber)
 			elseif data.unit.force == force then
 				for _, child in pairs(data.tracked) do
 					child.max_health = child.unit.max_health * mult
@@ -132,7 +132,7 @@ function refresh_provider_shields_max_health(force, tick)
 
 		for unumber, data in pairs(shield_generators) do
 			if not data.unit.valid then
-				table.insert(toRemove, unumber)
+				table_insert(toRemove, unumber)
 			else
 				for _, child in pairs(data.tracked) do
 					child.max_health = child.unit.max_health * mults[data.unit.force.name]
@@ -151,6 +151,10 @@ end
 
 local function should_tick_child(child)
 	return child.shield_health < child.max_health
+end
+
+local function should_tick_child_visuals(child)
+	return child.shield_health_last ~= child.shield_health
 end
 
 function begin_ticking_shield_generator(shield_generator)
@@ -176,6 +180,10 @@ function mark_shield_provider_child_dirty(shield_generator, tick, unit_number, f
 	local child = shield_generator.tracked[unit_number]
 
 	if child then
+		if shield_generator.visual_dirty_cache then
+			shield_generator.visual_dirty_cache[unit_number] = child
+		end
+
 		if not_ticking or force or not child.ticking then
 			child.ticking = true
 			shield_generator.tracked_dirty[unit_number] = child
@@ -215,6 +223,7 @@ function rebuild_shield_provider_dirty_lists(shield_generator, tick)
 				-- this also might happen on mod addition/removal
 				-- if mod changed prototype (e.g. furnace -> assembling-machine)
 				table.insert(toRemove, unumber)
+				goto CONTINUE
 			elseif should_tick_child(tracked_data) then
 				if not tracked_data.ticking then
 					tracked_data.ticking = true
@@ -229,6 +238,14 @@ function rebuild_shield_provider_dirty_lists(shield_generator, tick)
 				shield_generator.tracked_dirty_num = shield_generator.tracked_dirty_num - 1
 				tracked_data.ticking = false
 			end
+
+			if tracked_data.ticking and shield_generator.visual_dirty_cache then
+				-- shield generator is starving for power, so it only updates visuals
+				shield_generator.visual_dirty_cache[unumber] = tracked_data
+				ticking = true
+			end
+
+			::CONTINUE::
 		end
 	end
 
@@ -491,6 +508,8 @@ function tick_shield_providers(tick, delay, max_time, max_speed)
 		local energy = data.disabled and data.shield_energy or data.unit.energy
 
 		if energy > 0 then
+			data.visual_dirty_cache = nil
+
 			-- whenever there was any dirty shields
 			local run_dirty = false
 
@@ -531,7 +550,7 @@ function tick_shield_providers(tick, delay, max_time, max_speed)
 
 						tick_visuals(tick, tracked_data)
 						if energy <= 0 then break end
-					elseif tracked_data.shield_health_last > tracked_data.shield_health then
+					elseif should_tick_child_visuals(tracked_data) then
 						run_dirty = true
 						tick_visuals(tick, tracked_data)
 					else
@@ -565,22 +584,34 @@ function tick_shield_providers(tick, delay, max_time, max_speed)
 			set_right_bottom(data.battery_bar, data.unit, -data.width + 2 * data.width * energy / data.max_energy, data.height)
 		else
 			local any_updates = false
-			local removedChildren = {}
+			local removeChildren = {}
 
-			for child_unumber, tracked_data in pairs(data.tracked_dirty) do
-				if tracked_data.unit.valid then
-					if tracked_data.shield_health_last > tracked_data.shield_health then
-						any_updates = true
-						tick_visuals(tick, tracked_data)
+			if not data.visual_dirty_cache then
+				data.visual_dirty_cache = {}
+
+				for child_unumber, tracked_data in pairs(data.tracked_dirty) do
+					if tracked_data.unit.valid and should_tick_child_visuals(tracked_data) then
+						data.visual_dirty_cache[child_unumber] = tracked_data
 					end
-				else
-					report_error('Encountered invalid unit ' .. child_unumber .. ' in shield generator ' .. data.unit_number)
-					table_insert(removedChildren, child_unumber)
 				end
 			end
 
-			for _, child_unumber in ipairs(removedChildren) do
-				on_destroyed(child_unumber, tick)
+			for child_unumber, tracked_data in pairs(data.visual_dirty_cache) do
+				if tracked_data.unit.valid then
+					any_updates = true
+					tick_visuals(tick, tracked_data)
+
+					-- post check, so it updates at least once
+					if not should_tick_child_visuals(tracked_data) then
+						table_insert(removeChildren, child_unumber)
+					end
+				else
+					table_insert(removeChildren, child_unumber)
+				end
+			end
+
+			for _, child_unumber in ipairs(removeChildren) do
+				data.visual_dirty_cache[child_unumber] = nil
 			end
 
 			if not any_updates then
