@@ -16,8 +16,13 @@ return function()
 		storage.shields_generators[data.id] = data
 	end
 
-	for _, data in pairs(storage.shields_generators) do
-		data.unit_number = assert(data.id, 'Panic: missing storage.shields_generators[].id')
+	for index, data in pairs(storage.shields_generators) do
+		if not data.tracked then
+			report_error(string.format('Unable to migrate shield generator with index %d due to missing vital structures', index))
+			goto CONTINUE
+		end
+
+		data.unit_number = data.id
 		data.id = nil
 		data.ticking = data.tracked_dirty ~= nil
 		local copy = data.tracked
@@ -34,13 +39,16 @@ return function()
 		local dirty = data.tracked_dirty
 		data.tracked_dirty = {}
 
-		-- transform "tracked_dirty" from index list to hashtable
-		for _, index in ipairs(dirty) do
-			local child = copy[index]
-			data.tracked_dirty[child.unit_number] = child
+		if dirty then
+			-- transform "tracked_dirty" from index list to hashtable
+			for _, index in ipairs(dirty) do
+				local child = copy[index]
+				data.tracked_dirty[child.unit_number] = child
+			end
 		end
 
 		data.tracked_dirty_num = util.count(data.tracked_dirty)
+		::CONTINUE::
 	end
 
 	-- get rid of "pointer indices" of shield_generators_bound and use references directly
