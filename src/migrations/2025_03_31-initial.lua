@@ -9,7 +9,7 @@ return function()
 	storage.shield_generators_bound = storage.shield_generators_bound or {}
 	storage.shield_generators = storage.shield_generators or {}
 
-	for unumber, data in pairs(shields) do
+	for unumber, data in pairs(storage.shields) do
 		if data.unit.valid and data.shield.valid and should_self_shield_tick(data) then
 			show_self_shield_bars(data)
 		end
