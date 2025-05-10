@@ -1,8 +1,10 @@
 
+-- derative
+local shield_generators_bound = shield_generators_bound
+
 -- storage
 local shield_generators
 local shields
-local shield_generators_bound
 
 -- imports
 local tick_self_shields = tick_self_shields
@@ -14,7 +16,6 @@ local math_max = math.max
 on_setup_globals(function()
 	shields = assert(storage.shields)
 	shield_generators = assert(storage.shield_generators)
-	shield_generators_bound = assert(storage.shield_generators_bound)
 end)
 
 script_hook(defines.events.on_tick, function(event)

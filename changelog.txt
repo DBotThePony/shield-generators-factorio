@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.6
+Date: 2025-05-11
+  Changes:
+   - entity -> shield provider table no longer saved into savefile, but instead rebuilt every time savefile is loaded, reducing saves bloat
+  Fixes:
+   - Fixed another migration blopper from 0.5.3
+
+---------------------------------------------------------------------------------------------------
 Version: 0.5.5
 Date: 2025-05-11
   Fixes:

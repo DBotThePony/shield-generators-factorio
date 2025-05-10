@@ -1,9 +1,9 @@
 
 -- derative
+local shield_generators_bound = shield_generators_bound
 local shield_generators_dirty = shield_generators_dirty
 
 -- storage
-local shield_generators_bound
 local shield_generators
 local shields
 
@@ -31,18 +31,20 @@ local set_right_bottom = set_right_bottom
 local lerp = util.lerp
 
 on_init_globals(function()
-	storage.shield_generators_bound = {}
 	storage.shield_generators = {}
 end)
 
 on_setup_globals(function()
-	shield_generators_bound = assert(storage.shield_generators_bound)
 	shield_generators = assert(storage.shield_generators)
 	shields = assert(storage.shields)
 
 	for unumber, data in pairs(shield_generators) do
 		if data.ticking then
 			shield_generators_dirty[unumber] = data
+		end
+
+		for _, child in pairs(data.tracked) do
+			shield_generators_bound[child.unit_number] = data
 		end
 	end
 

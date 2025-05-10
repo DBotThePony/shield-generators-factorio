@@ -4,23 +4,27 @@
 -- and actually evil.
 -- so, let's fix that
 return function()
+	storage.shields_generators = nil
+
 	-- get rid of shield_generators / shield_generators_hash separation (always use unit number as index)
 	-- this is because, as it appears, Wube Lua uses linked hash map, so pairs() iteration order is as same as
 	-- insertion order
 	local copy = assert(storage.shield_generators, 'Panic: missing storage.shield_generators')
-	storage.shields_generators = {}
+	storage.shield_generators = {}
 
 	-- build dirty list from savegame
 	for i = 1, #copy do
 		local data = copy[i]
-		storage.shields_generators[data.id] = data
+		storage.shield_generators[data.id] = data
 	end
 
-	for index, data in pairs(storage.shields_generators) do
+	for index, data in pairs(storage.shield_generators) do
 		if not data.tracked then
 			report_error(string.format('Unable to migrate shield generator with index %d due to missing vital structures', index))
 			goto CONTINUE
 		end
+
+		if data.id == nil then break end -- already new format
 
 		data.unit_number = data.id
 		data.id = nil
@@ -51,11 +55,5 @@ return function()
 		::CONTINUE::
 	end
 
-	-- get rid of "pointer indices" of shield_generators_bound and use references directly
-	copy = assert(storage.shield_generators_bound, 'Panic: missing storage.shield_generators_bound')
-	storage.shield_generators_bound = {}
-
-	for unumber, id in pairs(copy) do
-		storage.shield_generators_bound[unumber] = assert(storage.shields_generators[id], 'Panic: Save is missing shield generator with ID ' .. id)
-	end
+	storage.shield_generators_bound = nil
 end

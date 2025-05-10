@@ -1,10 +1,10 @@
 
 -- derative
 local shields_dirty = {}
+local shield_generators_bound = shield_generators_bound
 
 -- storage
 local shields
-local shield_generators_bound
 local lazy_unconnected_self_iter
 
 -- cahce
@@ -26,7 +26,6 @@ end)
 
 on_setup_globals(function()
 	shields = assert(storage.shields)
-	shield_generators_bound = assert(storage.shield_generators_bound)
 	lazy_unconnected_self_iter = assert(storage.lazy_unconnected_self_iter)
 
 	local nextindex = 1

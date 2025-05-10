@@ -25,6 +25,7 @@ require('__shield-generators__/src/runtime/visual_functions')
 require('__shield-generators__/src/runtime/runtime_utils')
 
 -- derative globals
+_G.shield_generators_bound = {}
 _G.shield_generators_dirty = {}
 _G.shields_dirty = {}
 
