@@ -116,8 +116,6 @@ do
 	end
 
 	function setup_globals()
-		if not are_mod_structures_up_to_date() then return end
-
 		for _, fn in ipairs(globalSetupFuncs) do
 			fn()
 		end
@@ -125,10 +123,6 @@ do
 
 	function init_globals()
 		for _, fn in ipairs(globalInitFuncs) do
-			fn()
-		end
-
-		for _, fn in ipairs(globalSetupFuncs) do
 			fn()
 		end
 	end

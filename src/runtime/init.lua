@@ -1,52 +1,38 @@
 
+local initial_version = 0
 local migration_names = {
 	'2025_04_08-migrate_drawables',
 	'2025_03_31-initial',
 	'2025_05_08-simplify_provider_struct',
 }
 
-local migrations = {}
+local migrations = require('__migratus-orchestrus__/init.lua')()
 
-for _, name in ipairs(migration_names) do
-	table.insert(migrations, require('__shield-generators__/src/migrations/' .. name))
+for i, name in ipairs(migration_names) do
+	migrations.add_migration_path(i + initial_version, '__shield-generators__/src/migrations/' .. name)
 end
 
-function are_mod_structures_up_to_date()
-	if not storage.mod_structures_migrations then return false end
-
-	for _, name in ipairs(migration_names) do
-		if not storage.mod_structures_migrations[name] then return false end
-	end
-
-	return true
-end
+migrations.on_setup_globals(setup_globals)
 
 script.on_init(function()
-	storage.mod_structures_migrations = {}
-
-	for _, name in ipairs(migration_names) do
-		storage.mod_structures_migrations[name] = true
-	end
-
 	init_globals()
+	migrations.on_init()
 end)
 
 script.on_load(function()
-	setup_globals()
+	migrations.on_load()
 end)
 
 script.on_configuration_changed(function()
-	storage.mod_structures_migrations = storage.mod_structures_migrations or {}
-
-	for i, name in ipairs(migration_names) do
-		if not storage.mod_structures_migrations[name] then
-			log('Applying migration: ' .. name)
-			local migrate = migrations[i]
-			migrate()
-			storage.mod_structures_migrations[name] = true
+	if storage.mod_structures_migrations then
+		for i, name in ipairs(migration_names) do
+			if storage.mod_structures_migrations[name] then
+				migrations.bump_version(i + initial_version)
+			end
 		end
+
+		storage.mod_structures_migrations = nil
 	end
 
-	assert(are_mod_structures_up_to_date())
-	setup_globals()
+	migrations.on_configuration_changed()
 end)

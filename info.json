@@ -1,13 +1,14 @@
 
 {
     "name": "shield-generators",
-    "version": "0.5.3",
+    "version": "0.5.4",
     "factorio_version": "2.0",
     "title": "Shield Generators",
     "author": "DBotThePony",
     "homepage": "https://gitlab.com/DBotThePony/shield-generators-factorio",
     "description": "Adds turret shields and shield generators for civil structures.",
     "dependencies": [
-        "base >= 2.0"
+        "base >= 2.0",
+        "migratus-orchestrus"
     ]
 }
