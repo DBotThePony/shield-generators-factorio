@@ -47,7 +47,7 @@ return function()
 			end
 		end
 
-		data.tracked_dirty_num = util.count(data.tracked_dirty)
+		data.tracked_dirty_num = table_count(data.tracked_dirty)
 		::CONTINUE::
 	end
 
