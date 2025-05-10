@@ -15,7 +15,7 @@ return function()
 	-- build dirty list from savegame
 	for i = 1, #copy do
 		local data = copy[i]
-		storage.shield_generators[data.id] = data
+		storage.shield_generators[data.id or data.unit_number] = data
 	end
 
 	for index, data in pairs(storage.shield_generators) do
