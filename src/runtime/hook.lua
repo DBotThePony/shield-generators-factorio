@@ -130,6 +130,7 @@ end
 
 on_built_entity = createHookContext(function(dispatcher)
 	script.on_event(defines.events.on_built_entity, dispatcher, CONSTANTS.filter_types)
+	script.on_event(defines.events.on_space_platform_built_entity, dispatcher, CONSTANTS.filter_types)
 	script.on_event(defines.events.script_raised_built, dispatcher, CONSTANTS.filter_types)
 	script.on_event(defines.events.script_raised_revive, dispatcher, CONSTANTS.filter_types)
 	script.on_event(defines.events.on_robot_built_entity, dispatcher, CONSTANTS.filter_types)
