@@ -20,6 +20,9 @@
 
 local beacon = data.raw.beacon.beacon
 local values = require('__shield-generators__/values')
+local icons = "__shield-generators__/graphics/icons/"
+local tech = "__shield-generators__/graphics/technology/"
+local entity = "__shield-generators__/graphics/entity/"
 
 if data.raw.technology['energy-shield-equipment'] then
 	table.insert(data.raw.technology['energy-shield-equipment'].prerequisites, 'shield-generators-basics')
@@ -33,10 +36,8 @@ local basic_shield_provider = {
 		'player-creation',
 	},
 
-	icon = '__base__/graphics/icons/beacon.png',
-	-- icon = '__base__/graphics/icons/energy-shield-equipment.png',
+	icon = icons .. 'shield-generators-generator.png',
 	icon_size = 64,
-	icon_mipmaps = 4,
 
 	energy_production = '0W',
 	energy_usage = '0W',
@@ -71,30 +72,17 @@ local basic_shield_provider = {
 	picture = {
 		layers = {
 			{
-				filename = '__base__/graphics/entity/beacon/beacon-bottom.png',
-				width = 212,
-				height = 192,
+				filename = entity .. 'beacon/beacon1.png',
+				width = 256,
+				height = 256,
 				scale = 0.5,
-				shift = util.by_pixel(0.5, 1)
 			},
-
 			{
-				filename = '__base__/graphics/entity/beacon/beacon-shadow.png',
-				width = 244,
+				filename = entity .. 'beacon/beacon-shadow.png',
+				width = 292,
 				height = 176,
 				scale = 0.5,
 				draw_as_shadow = true,
-				shift = util.by_pixel(12.5, 0.5)
-			},
-
-			{
-				filename = '__base__/graphics/entity/beacon/beacon-top.png',
-				width = 96,
-				height = 140,
-				scale = 0.5,
-				repeat_count = 45,
-				animation_speed = 0.5,
-				shift = util.by_pixel(3, -19)
 			},
 		},
 	},
@@ -102,66 +90,60 @@ local basic_shield_provider = {
 
 local advanced_shield_provider = table.deepcopy(basic_shield_provider)
 advanced_shield_provider.name = 'shield-generators-generator-advanced'
+advanced_shield_provider.icon = icons .. 'shield-generators-generator-advanced.png'
 advanced_shield_provider.energy_source.buffer_capacity = '800MJ'
 advanced_shield_provider.energy_source.input_flow_limit = '60MW'
-advanced_shield_provider.selection_box = {
-	{-2.5, -2.5},
-	{2.5, 2.5}
-}
-
-advanced_shield_provider.collision_box = {
-	{-2, -2},
-	{2, 2}
-}
+advanced_shield_provider.collision_box = {{-1.7, -1.7}, {1.7, 1.7}}
+advanced_shield_provider.selection_box = {{-2, -2}, {2, 2}}
 
 advanced_shield_provider.max_health = 1000
 advanced_shield_provider.minable.result = 'shield-generators-generator-advanced'
-advanced_shield_provider.picture.layers[1].scale = 1
-advanced_shield_provider.picture.layers[2].scale = 1
-advanced_shield_provider.picture.layers[3].scale = 1
-advanced_shield_provider.picture.layers[3].shift = util.by_pixel(6, -31)
+advanced_shield_provider.picture.layers[1] = 
+{
+	filename = entity .. 'beacon/beacon2.png',
+	width = 341,
+	height = 341,
+	scale = 0.5,
+}
+advanced_shield_provider.picture.layers[2].scale = 0.66
 
 local elite_shield_provider = table.deepcopy(basic_shield_provider)
 elite_shield_provider.name = 'shield-generators-generator-elite'
+elite_shield_provider.icon = icons .. 'shield-generators-generator-elite.png'
 elite_shield_provider.energy_source.buffer_capacity = '2GJ'
 elite_shield_provider.energy_source.input_flow_limit = '500MW'
-elite_shield_provider.selection_box = {
-	{-3.5, -3.5},
-	{3.5, 3.5}
-}
-
-elite_shield_provider.collision_box = {
-	{-3, -3},
-	{3, 3}
-}
+elite_shield_provider.collision_box = {{-2.7, -2.7}, {2.7, 2.7}}
+elite_shield_provider.selection_box = {{-3, -3}, {3, 3}}
 
 elite_shield_provider.max_health = 1800
 elite_shield_provider.minable.result = 'shield-generators-generator-elite'
-elite_shield_provider.picture.layers[1].scale = 1.4
-elite_shield_provider.picture.layers[2].scale = 1.4
-elite_shield_provider.picture.layers[3].scale = 1.4
-elite_shield_provider.picture.layers[3].shift = util.by_pixel(7.5, -37)
+elite_shield_provider.picture.layers[1] =
+{
+	filename = entity .. 'beacon/beacon3.png',
+	width = 512,
+	height = 512,
+	scale = 0.5,
+}
+elite_shield_provider.picture.layers[2].scale = 1
 
 local ultimate_shield_provider = table.deepcopy(basic_shield_provider)
 ultimate_shield_provider.name = 'shield-generators-generator-ultimate'
+ultimate_shield_provider.icon = icons .. 'shield-generators-generator-ultimate.png'
 ultimate_shield_provider.energy_source.buffer_capacity = '5GJ'
 ultimate_shield_provider.energy_source.input_flow_limit = '2000MW'
-ultimate_shield_provider.selection_box = {
-	{-4.5, -4.5},
-	{4.5, 4.5}
-}
-
-ultimate_shield_provider.collision_box = {
-	{-4, -4},
-	{4, 4}
-}
+ultimate_shield_provider.collision_box = {{-3.7, -3.7}, {3.7, 3.7}}
+ultimate_shield_provider.selection_box = {{-4, -4}, {4, 4}}
 
 ultimate_shield_provider.max_health = 3000
 ultimate_shield_provider.minable.result = 'shield-generators-generator-ultimate'
-ultimate_shield_provider.picture.layers[1].scale = 1.8
-ultimate_shield_provider.picture.layers[2].scale = 1.8
-ultimate_shield_provider.picture.layers[3].scale = 1.8
-ultimate_shield_provider.picture.layers[3].shift = util.by_pixel(8.5, -56)
+ultimate_shield_provider.picture.layers[1] =
+{
+	filename = entity .. 'beacon/beacon4.png',
+	width = 682,
+	height = 682,
+	scale = 0.5,
+}
+ultimate_shield_provider.picture.layers[2].scale = 1.33
 
 local prototypes = {
 	-- technologies
@@ -169,11 +151,8 @@ local prototypes = {
 	{
 		type = 'technology',
 		name = 'shield-generators-basics',
-
-		icon_size = 64,
-		icon_mipmaps = 4,
-		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
-		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+		icon = tech .. 'shield-generators-basics.png',
+		icon_size = 256,
 
 		effects = {
 
@@ -199,10 +178,8 @@ local prototypes = {
 		type = 'technology',
 		name = 'shield-generators-turret-shields-basics',
 
-		icon_size = 64,
-		icon_mipmaps = 4,
-		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
-		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+		icon = tech .. "shield-generators-turret-shields-basics.png",
+		icon_size = 256,
 
 		effects = {
 
@@ -228,11 +205,8 @@ local prototypes = {
 		type = 'technology',
 		name = 'shield-generators-provider-shields-basics',
 
-		icon_size = 64,
-		icon_mipmaps = 4,
-		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
-		icon = '__base__/graphics/icons/beacon.png',
-
+		icon = tech .. 'shield-generators-generator.png',
+		icon_size = 256,
 		effects = {
 			{
 				type = 'unlock-recipe',
@@ -266,11 +240,8 @@ local prototypes = {
 		type = 'technology',
 		name = 'shield-generators-generator-advanced',
 
-		icon_size = 64,
-		icon_mipmaps = 4,
-		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
-		icon = '__base__/graphics/icons/beacon.png',
-
+		icon = tech .. 'shield-generators-generator-advanced.png',
+		icon_size = 256,
 		effects = {
 			{
 				type = 'unlock-recipe',
@@ -303,11 +274,8 @@ local prototypes = {
 		type = 'technology',
 		name = 'shield-generators-generator-elite',
 
-		icon_size = 64,
-		icon_mipmaps = 4,
-		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
-		icon = '__base__/graphics/icons/beacon.png',
-
+		icon = tech .. 'shield-generators-generator-elite.png',
+		icon_size = 256,
 		effects = {
 			{
 				type = 'unlock-recipe',
@@ -341,10 +309,8 @@ local prototypes = {
 		type = 'technology',
 		name = 'shield-generators-generator-ultimate',
 
-		icon_size = 64,
-		icon_mipmaps = 4,
-		-- icon = '__base__/graphics/technology/energy-shield-equipment.png',
-		icon = '__base__/graphics/icons/beacon.png',
+		icon = tech .. 'shield-generators-generator-ultimate.png',
+		icon_size = 256,
 
 		effects = {
 			{
@@ -382,49 +348,41 @@ local prototypes = {
 	{
 		type = 'item',
 		name = 'shield-generators-generator',
-		icon = '__base__/graphics/icons/beacon.png',
-		icon_size = 64,
-		icon_mipmaps = 4,
+		icon = icons .. 'shield-generators-generator.png',
 		subgroup = 'defensive-structure',
 		order = 'b[turret]-n[shield-generator-a]',
 		place_result = 'shield-generators-generator',
-		stack_size = 10
+		stack_size = 10,
 	},
 
 	{
 		type = 'item',
 		name = 'shield-generators-generator-advanced',
-		icon = '__base__/graphics/icons/beacon.png',
-		icon_size = 64,
-		icon_mipmaps = 4,
+		icon = icons .. 'shield-generators-generator-advanced.png',
 		subgroup = 'defensive-structure',
 		order = 'b[turret]-n[shield-generator-b]',
 		place_result = 'shield-generators-generator-advanced',
-		stack_size = 10
+		stack_size = 10,
 	},
 
 	{
 		type = 'item',
 		name = 'shield-generators-generator-elite',
-		icon = '__base__/graphics/icons/beacon.png',
-		icon_size = 64,
-		icon_mipmaps = 4,
+		icon = icons .. 'shield-generators-generator-elite.png',
 		subgroup = 'defensive-structure',
 		order = 'b[turret]-n[shield-generator-c]',
 		place_result = 'shield-generators-generator-elite',
-		stack_size = 10
+		stack_size = 10,
 	},
 
 	{
 		type = 'item',
 		name = 'shield-generators-generator-ultimate',
-		icon = '__base__/graphics/icons/beacon.png',
-		icon_size = 64,
-		icon_mipmaps = 4,
+		icon = icons .. 'shield-generators-generator-ultimate.png',
 		subgroup = 'defensive-structure',
 		order = 'b[turret]-n[shield-generator-d]',
 		place_result = 'shield-generators-generator-ultimate',
-		stack_size = 10
+		stack_size = 10,
 	},
 
 	-- energy shield building recipe
@@ -496,22 +454,8 @@ local prototypes = {
 	{
 		type = 'technology',
 		name = 'shield-generators-superconducting-shields',
-
-		icons = {
-			{
-				icon_size = 64,
-				icon_mipmaps = 4,
-				icon = '__base__/graphics/icons/beacon.png',
-			},
-
-			{
-				icon_size = 128,
-				icon_mipmaps = 3,
-				scale = 0.25,
-				shift = {25, 25},
-				icon = '__core__/graphics/icons/technology/constants/constant-health.png',
-			},
-		},
+		icon = tech .. 'shield-generators-superconducting-shields.png',
+		icon_size = 256,
 
 		effects = {
 			{
@@ -565,21 +509,8 @@ do
 			type = 'technology',
 			name = 'shield-generators-turret-shield-capacity-' .. i,
 
-			icons = {
-				{
-					icon_size = 64,
-					icon_mipmaps = 4,
-					icon = '__base__/graphics/icons/energy-shield-equipment.png',
-				},
-
-				{
-					icon_size = 128,
-					icon_mipmaps = 3,
-					scale = 0.25,
-					shift = {25, 25},
-					icon = '__core__/graphics/icons/technology/constants/constant-battery.png',
-				},
-			},
+			icon = tech .. 'shield-generators-turret-shield-capacity.png',
+			icon_size = 256,
 
 			effects = {
 				{
@@ -634,9 +565,8 @@ do
 		hidden_in_factoriopedia = true,
 		selectable_in_game = false,
 
-		icon = '__base__/graphics/icons/energy-shield-equipment.png',
+		icon = icons .. 'shield-generators-generator.png',
 		icon_size = 64,
-		icon_mipmaps = 4,
 
 		max_health = 15,
 
@@ -679,22 +609,8 @@ do
 		table.insert(prototypes, {
 			type = 'technology',
 			name = 'shield-generators-turret-shield-input-' .. i,
-
-			icons = {
-				{
-					icon_size = 64,
-					icon_mipmaps = 4,
-					icon = '__base__/graphics/icons/energy-shield-equipment.png',
-				},
-
-				{
-					icon_size = 128,
-					icon_mipmaps = 3,
-					scale = 0.25,
-					shift = {25, 25},
-					icon = '__core__/graphics/icons/technology/constants/constant-speed.png',
-				},
-			},
+			icon = tech .. 'shield-generators-turret-shield-input.png',
+			icon_size = 256,
 
 			effects = {
 				{
@@ -747,21 +663,8 @@ do
 			type = 'technology',
 			name = 'shield-generators-turret-shield-speed-' .. i,
 
-			icons = {
-				{
-					icon_size = 64,
-					icon_mipmaps = 4,
-					icon = '__base__/graphics/icons/energy-shield-equipment.png',
-				},
-
-				{
-					icon_size = 128,
-					icon_mipmaps = 3,
-					scale = 0.25,
-					shift = {25, 25},
-					icon = '__core__/graphics/icons/technology/constants/constant-movement-speed.png',
-				},
-			},
+			icon = tech .. 'shield-generators-turret-shield-speed.png',
+			icon_size = 256,
 
 			effects = {
 				{
@@ -809,22 +712,8 @@ do
 			type = 'technology',
 			name = 'shield-generators-provider-shield-speed-' .. i,
 
-			icons = {
-				{
-					icon_size = 64,
-					icon_mipmaps = 4,
-					-- icon = '__base__/graphics/icons/energy-shield-equipment.png',
-					icon = '__base__/graphics/icons/beacon.png',
-				},
-
-				{
-					icon_size = 128,
-					icon_mipmaps = 3,
-					scale = 0.25,
-					shift = {25, 25},
-					icon = '__core__/graphics/icons/technology/constants/constant-movement-speed.png',
-				},
-			},
+			icon = tech .. 'shield-generators-provider-shield-speed.png',
+			icon_size = 256,
 
 			effects = {
 				{
@@ -851,7 +740,7 @@ end
 local switch_prototype = {
 	type = 'selection-tool',
 	name = 'shield-generator-switch',
-	icon = '__shield-generators__/graphics/icons/toggle-shields.png',
+	icon = icons .. 'toggle-shields.png',
 	icon_size = 32,
 
 	select = {
@@ -883,7 +772,7 @@ local switch_shortcut = {
 	item_to_spawn = 'shield-generator-switch',
 	technology_to_unlock = 'shield-generators-basics',
 	icons = {{
-		icon = '__shield-generators__/graphics/icons/toggle-shields-shortcut.png',
+		icon = icons .. 'toggle-shields-shortcut.png',
 		icon_size = 64,
 		scale = 0.5,
 	}},

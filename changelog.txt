@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.6.0
+Date: 2025-05-12
+  Changes:
+    - (Update by snouz)
+    - Distinct icons for each shield generator
+    - Upscaled entities, adjusted their hitbox and selection box
+    - Fixed and reworked tech icons in 256px
+---------------------------------------------------------------------------------------------------
 Version: 0.5.7
 Date: 2025-05-12
   Fixes:
