@@ -144,6 +144,15 @@ values._allowed_types_self = {}
 
 -- array to pass to find_entities_filtered and to build hash above
 values._allowed_types = {
+	-- space age
+	'agricultural-tower',
+	'asteroid-collector',
+	'cargo-bay',
+	'lightning-attractor',
+	'space-platform-hub',
+	'thruster',
+
+	-- vanilla
 	'boiler',
 	'beacon',
 	'accumulator',
