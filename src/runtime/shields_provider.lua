@@ -64,10 +64,10 @@ function rebuild_shield_provider_speed_cache()
 end
 
 function reload_shield_provider_config_values()
-	RANGE_DEF['shield-generators-generator'] = settings.global['shield-generators-provider-range-basic'].value
-	RANGE_DEF['shield-generators-generator-advanced'] = settings.global['shield-generators-provider-range-advanced'].value
-	RANGE_DEF['shield-generators-generator-elite'] = settings.global['shield-generators-provider-range-elite'].value
-	RANGE_DEF['shield-generators-generator-ultimate'] = settings.global['shield-generators-provider-range-ultimate'].value
+	RANGE_DEF['shield-generators-generator'] = settings.startup['shield-generators-provider-range-basic'].value
+	RANGE_DEF['shield-generators-generator-advanced'] = settings.startup['shield-generators-provider-range-advanced'].value
+	RANGE_DEF['shield-generators-generator-elite'] = settings.startup['shield-generators-provider-range-elite'].value
+	RANGE_DEF['shield-generators-generator-ultimate'] = settings.startup['shield-generators-provider-range-ultimate'].value
 
 	SEARCH_RANGE = math.max(
 		RANGE_DEF['shield-generators-generator'],

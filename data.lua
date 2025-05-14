@@ -23,6 +23,12 @@ local values = require('__shield-generators__/values')
 local icons = "__shield-generators__/graphics/icons/"
 local tech = "__shield-generators__/graphics/technology/"
 local entity = "__shield-generators__/graphics/entity/"
+local radius_img = {
+	filename = entity .. "beacon/beacon-radius-visualization.png",
+	priority = "extra-high-no-scale",
+	width = 512,
+	height = 512
+}
 
 if data.raw.technology['energy-shield-equipment'] then
 	table.insert(data.raw.technology['energy-shield-equipment'].prerequisites, 'shield-generators-basics')
@@ -68,8 +74,13 @@ local basic_shield_provider = {
 		output_flow_limit = '0W',
 		drain = '0W',
 	},
-
-	picture = {
+	radius_visualisation_specification =
+	{
+		sprite = radius_img,
+	    distance = settings.startup['shield-generators-provider-range-basic'].value,
+	},
+	continuous_animation = true,
+	animation = {
 		layers = {
 			{
 				filename = entity .. 'beacon/beacon1.png',
@@ -98,14 +109,19 @@ advanced_shield_provider.selection_box = {{-2, -2}, {2, 2}}
 
 advanced_shield_provider.max_health = 1000
 advanced_shield_provider.minable.result = 'shield-generators-generator-advanced'
-advanced_shield_provider.picture.layers[1] = 
+advanced_shield_provider.animation.layers[1] = 
 {
 	filename = entity .. 'beacon/beacon2.png',
 	width = 341,
 	height = 341,
 	scale = 0.5,
 }
-advanced_shield_provider.picture.layers[2].scale = 0.66
+advanced_shield_provider.animation.layers[2].scale = 0.66
+advanced_shield_provider.radius_visualisation_specification =
+{
+	sprite = radius_img,
+    distance = settings.startup['shield-generators-provider-range-advanced'].value,
+}
 
 local elite_shield_provider = table.deepcopy(basic_shield_provider)
 elite_shield_provider.name = 'shield-generators-generator-elite'
@@ -117,14 +133,19 @@ elite_shield_provider.selection_box = {{-3, -3}, {3, 3}}
 
 elite_shield_provider.max_health = 1800
 elite_shield_provider.minable.result = 'shield-generators-generator-elite'
-elite_shield_provider.picture.layers[1] =
+elite_shield_provider.animation.layers[1] =
 {
 	filename = entity .. 'beacon/beacon3.png',
 	width = 512,
 	height = 512,
 	scale = 0.5,
 }
-elite_shield_provider.picture.layers[2].scale = 1
+elite_shield_provider.animation.layers[2].scale = 1
+elite_shield_provider.radius_visualisation_specification =
+{
+	sprite = radius_img,
+    distance = settings.startup['shield-generators-provider-range-elite'].value,
+}
 
 local ultimate_shield_provider = table.deepcopy(basic_shield_provider)
 ultimate_shield_provider.name = 'shield-generators-generator-ultimate'
@@ -136,14 +157,19 @@ ultimate_shield_provider.selection_box = {{-4, -4}, {4, 4}}
 
 ultimate_shield_provider.max_health = 3000
 ultimate_shield_provider.minable.result = 'shield-generators-generator-ultimate'
-ultimate_shield_provider.picture.layers[1] =
+ultimate_shield_provider.animation.layers[1] =
 {
 	filename = entity .. 'beacon/beacon4.png',
 	width = 682,
 	height = 682,
 	scale = 0.5,
 }
-ultimate_shield_provider.picture.layers[2].scale = 1.33
+ultimate_shield_provider.animation.layers[2].scale = 1.33
+ultimate_shield_provider.radius_visualisation_specification =
+{
+	sprite = radius_img,
+    distance = settings.startup['shield-generators-provider-range-ultimate'].value,
+}
 
 local prototypes = {
 	-- technologies
