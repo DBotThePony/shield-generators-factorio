@@ -613,7 +613,23 @@ do
 			input_flow_limit = '600kW',
 			output_flow_limit = '0W',
 			drain = '0W',
-		}
+		},
+		--[[animation = {
+			layers = {
+				{
+					filename = entity .. "beacon/shield-picture.png",
+					width = 512,
+					height = 512,
+					scale = 1/4,
+					draw_as_glow = true,
+					shift = util.by_pixel(0,-10),
+					blend_mode = "additive"
+					--tint = {1,1,1,0.1},
+				}
+			},
+		},]]
+
+
 	}
 
 	-- energy interface per turret
