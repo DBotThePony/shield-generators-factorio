@@ -8,6 +8,11 @@ Date: 2025-05-12
     - Fixed and reworked tech icons in 256px
     - Added range visualizer (like beacons) linked to range setting (which is now a startup setting)
 ---------------------------------------------------------------------------------------------------
+Version: 0.5.8
+Date: 2025-05-12
+  Fixes:
+   - Also make mod recognize new building prototypes added by Space Age
+---------------------------------------------------------------------------------------------------
 Version: 0.5.7
 Date: 2025-05-12
   Fixes:
