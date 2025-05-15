@@ -877,7 +877,7 @@ local switch_shortcut = {
 	technology_to_unlock = 'shield-generators-basics',
 	icons = {{
 		icon = icons .. 'toggle-shields-shortcut.png',
-		icon_size = 64,
+		icon_size = 56,
 		scale = 0.5,
 	}},
 }

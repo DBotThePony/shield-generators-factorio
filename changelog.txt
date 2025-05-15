@@ -6,6 +6,8 @@ Date: 2025-05-
     - New shield generator graphics, with animations
     - New sound
     - New distinct icons for each shield generator
+    - New tooltip icon
+    - New thumbnail
     - Upscaled entities, adjusted their hitbox and selection box
     - Fixed and reworked tech icons in 256px
     - Added range visualizer (like beacons) linked to range setting (which is now a startup setting)
