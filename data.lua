@@ -57,7 +57,12 @@ local basic_shield_provider = {
 	water_reflection = beacon.water_reflection,
 	corpse = beacon.corpse,
 	dying_explosion = beacon.dying_explosion,
-	working_sound = beacon.working_sound,
+	working_sound =
+	{
+	  sound = { filename = "__shield-generators__/sound/cicada.ogg", volume = 0.9 },
+	  idle_sound  = { filename = "__shield-generators__/sound/cicada.ogg", volume = 0.15 },
+	  max_sounds_per_prototype = 3
+	},
 	max_health = 600,
 
 	vehicle_impact_sound = beacon.generic_impact,
@@ -87,13 +92,28 @@ local basic_shield_provider = {
 				width = 256,
 				height = 256,
 				scale = 0.5,
+				repeat_count = 25,
+				animation_speed = 0.5,
 			},
 			{
 				filename = entity .. 'beacon/beacon-shadow.png',
 				width = 292,
 				height = 176,
 				scale = 0.5,
+				repeat_count = 25,
+				animation_speed = 0.1,
 				draw_as_shadow = true,
+			},
+			{
+				filename = entity .. 'beacon/beacon1-light.png',
+				width = 256,
+				height = 256,
+				scale = 0.5,
+				line_length = 5,
+				frame_count = 25,
+				animation_speed = 0.5,
+				draw_as_glow = true,
+				blend_mode = "additive",
 			},
 		},
 	},
@@ -115,8 +135,22 @@ advanced_shield_provider.animation.layers[1] =
 	width = 341,
 	height = 341,
 	scale = 0.5,
+	animation_speed = 0.4,
+	repeat_count = 25,
 }
 advanced_shield_provider.animation.layers[2].scale = 0.66
+advanced_shield_provider.animation.layers[3] = 
+{
+	filename = entity .. 'beacon/beacon2-light.png',
+	width = 341,
+	height = 341,
+	scale = 0.5,
+	line_length = 5,
+	frame_count = 25,
+	animation_speed = 0.4,
+	draw_as_glow = true,
+	blend_mode = "additive",
+}
 advanced_shield_provider.radius_visualisation_specification =
 {
 	sprite = radius_img,
@@ -139,8 +173,22 @@ elite_shield_provider.animation.layers[1] =
 	width = 512,
 	height = 512,
 	scale = 0.5,
+	animation_speed = 0.3,
+	repeat_count = 25,
 }
 elite_shield_provider.animation.layers[2].scale = 1
+elite_shield_provider.animation.layers[3] = 
+{
+	filename = entity .. 'beacon/beacon3-light.png',
+	width = 512,
+	height = 512,
+	scale = 0.5,
+	line_length = 5,
+	frame_count = 25,
+	animation_speed = 0.3,
+	draw_as_glow = true,
+	blend_mode = "additive",
+}
 elite_shield_provider.radius_visualisation_specification =
 {
 	sprite = radius_img,
@@ -163,8 +211,22 @@ ultimate_shield_provider.animation.layers[1] =
 	width = 682,
 	height = 682,
 	scale = 0.5,
+	repeat_count = 25,
+	animation_speed = 0.25,
 }
 ultimate_shield_provider.animation.layers[2].scale = 1.33
+ultimate_shield_provider.animation.layers[3] = 
+{
+	filename = entity .. 'beacon/beacon4-light.png',
+	width = 682,
+	height = 682,
+	scale = 0.5,
+	line_length = 5,
+	frame_count = 25,
+	animation_speed = 0.25,
+	draw_as_glow = true,
+	blend_mode = "additive",
+}
 ultimate_shield_provider.radius_visualisation_specification =
 {
 	sprite = radius_img,
