@@ -94,7 +94,7 @@ data:extend({
 	{
 		type = 'int-setting',
 		name = 'shield-generators-provider-range-basic',
-		setting_type = 'runtime-global',
+		setting_type = 'startup',
 		default_value = 16,
 		minimum_value = 1,
 		order = 'ba',
@@ -103,7 +103,7 @@ data:extend({
 	{
 		type = 'int-setting',
 		name = 'shield-generators-provider-range-advanced',
-		setting_type = 'runtime-global',
+		setting_type = 'startup',
 		default_value = 32,
 		minimum_value = 1,
 		order = 'bb',
@@ -112,7 +112,7 @@ data:extend({
 	{
 		type = 'int-setting',
 		name = 'shield-generators-provider-range-elite',
-		setting_type = 'runtime-global',
+		setting_type = 'startup',
 		default_value = 64,
 		minimum_value = 1,
 		order = 'bc',
@@ -121,7 +121,7 @@ data:extend({
 	{
 		type = 'int-setting',
 		name = 'shield-generators-provider-range-ultimate',
-		setting_type = 'runtime-global',
+		setting_type = 'startup',
 		default_value = 128,
 		minimum_value = 1,
 		order = 'bd',
