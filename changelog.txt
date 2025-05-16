@@ -10,6 +10,7 @@ Date: 2025-05-16
     - Upscaled entities, adjusted their hitbox and selection box
     - Fixed and reworked tech icons in 256px
     - Added range visualizer (like beacons) linked to range setting (which is now a startup setting)
+    - Shield generator radius is no longer runtime global setting but instead startup setting, caution should be used when upgrading mod in worlds where they were non-default value(s)
 ---------------------------------------------------------------------------------------------------
 Version: 0.5.8
 Date: 2025-05-12
