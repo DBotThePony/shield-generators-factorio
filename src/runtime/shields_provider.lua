@@ -63,19 +63,19 @@ function rebuild_shield_provider_speed_cache()
 	end
 end
 
+RANGE_DEF['shield-generators-generator'] = settings.startup['shield-generators-provider-range-basic'].value
+RANGE_DEF['shield-generators-generator-advanced'] = settings.startup['shield-generators-provider-range-advanced'].value
+RANGE_DEF['shield-generators-generator-elite'] = settings.startup['shield-generators-provider-range-elite'].value
+RANGE_DEF['shield-generators-generator-ultimate'] = settings.startup['shield-generators-provider-range-ultimate'].value
+
+SEARCH_RANGE = math.max(
+	RANGE_DEF['shield-generators-generator'],
+	RANGE_DEF['shield-generators-generator-advanced'],
+	RANGE_DEF['shield-generators-generator-elite'],
+	RANGE_DEF['shield-generators-generator-ultimate']
+)
+
 function reload_shield_provider_config_values()
-	RANGE_DEF['shield-generators-generator'] = settings.startup['shield-generators-provider-range-basic'].value
-	RANGE_DEF['shield-generators-generator-advanced'] = settings.startup['shield-generators-provider-range-advanced'].value
-	RANGE_DEF['shield-generators-generator-elite'] = settings.startup['shield-generators-provider-range-elite'].value
-	RANGE_DEF['shield-generators-generator-ultimate'] = settings.startup['shield-generators-provider-range-ultimate'].value
-
-	SEARCH_RANGE = math.max(
-		RANGE_DEF['shield-generators-generator'],
-		RANGE_DEF['shield-generators-generator-advanced'],
-		RANGE_DEF['shield-generators-generator-elite'],
-		RANGE_DEF['shield-generators-generator-ultimate']
-	)
-
 	if storage['shield-generators-provider-capacity'] ~= settings.global['shield-generators-provider-capacity'].value and game then
 		local value = settings.global['shield-generators-provider-capacity'].value
 		storage['shield-generators-provider-capacity'] = value
