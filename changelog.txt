@@ -1,13 +1,12 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.6.0
-Date: 2025-05-
+Date: 2025-05-16
   Changes:
     - (Update by snouz)
     - New shield generator graphics, with animations
     - New sound
     - New distinct icons for each shield generator
     - New tooltip icon
-    - New thumbnail
     - Upscaled entities, adjusted their hitbox and selection box
     - Fixed and reworked tech icons in 256px
     - Added range visualizer (like beacons) linked to range setting (which is now a startup setting)
@@ -15,45 +14,45 @@ Date: 2025-05-
 Version: 0.5.8
 Date: 2025-05-12
   Fixes:
-   - Also make mod recognize new building prototypes added by Space Age
+    - Also make mod recognize new building prototypes added by Space Age
 ---------------------------------------------------------------------------------------------------
 Version: 0.5.7
 Date: 2025-05-12
   Fixes:
-   - Mod now listens for on_space_platform_built_entity, hence shield generators now work on space platforms
+    - Mod now listens for on_space_platform_built_entity, hence shield generators now work on space platforms
 ---------------------------------------------------------------------------------------------------
 Version: 0.5.6
 Date: 2025-05-11
   Changes:
-   - entity -> shield provider table no longer saved into savefile, but instead rebuilt every time savefile is loaded, reducing saves bloat
+    - entity -> shield provider table no longer saved into savefile, but instead rebuilt every time savefile is loaded, reducing saves bloat
   Fixes:
-   - Fixed another migration blopper from 0.5.3
+    - Fixed another migration blopper from 0.5.3
 ---------------------------------------------------------------------------------------------------
 Version: 0.5.5
 Date: 2025-05-11
   Fixes:
-   - Fixed migration crash introduced in 0.5.3
+    - Fixed migration crash introduced in 0.5.3
 ---------------------------------------------------------------------------------------------------
 Version: 0.5.4
 Date: 2025-05-11
   Changes:
-   - Mod data structure migration was switched to separate library, Migratus Orchestrus
+    - Mod data structure migration was switched to separate library, Migratus Orchestrus
 ---------------------------------------------------------------------------------------------------
 Version: 0.5.3
 Date: 2025-05-09
   Features:
-   - Shield health multiplier is now configurable
+    - Shield health multiplier is now configurable
   Changes:
-   - Mod data structure migration was greatly improved
-   - Concentrated Solar reflectors are now blacklisted from having self shield (previously they had shield because they use turret base)
-   - Shield provider internal data structure was simplified and should generally tick faster
+    - Mod data structure migration was greatly improved
+    - Concentrated Solar reflectors are now blacklisted from having self shield (previously they had shield because they use turret base)
+    - Shield provider internal data structure was simplified and should generally tick faster
   Fixes:
-   - Fixed re-connected to power grid turrets taking way longer than expected to be "discovered" by script as active
-   - Saves created in Factorio 1.1 are now properly migrated from
-   - Disabling shield generator no longer crashes the game
-   - Cloning shield generators have been slightly improved, it now properly copies its own shield upon clone
-   - Reversing (unresearching through editor) "turret shield generators" research no longer robs them off provider shields if they have one
-   - Visuals of shield generators no longer stop updating when shield generator energy drops to zero
+    - Fixed re-connected to power grid turrets taking way longer than expected to be "discovered" by script as active
+    - Saves created in Factorio 1.1 are now properly migrated from
+    - Disabling shield generator no longer crashes the game
+    - Cloning shield generators have been slightly improved, it now properly copies its own shield upon clone
+    - Reversing (unresearching through editor) "turret shield generators" research no longer robs them off provider shields if they have one
+    - Visuals of shield generators no longer stop updating when shield generator energy drops to zero
 ---------------------------------------------------------------------------------------------------
 Version: 0.4.2
 Date: 2024-12-12

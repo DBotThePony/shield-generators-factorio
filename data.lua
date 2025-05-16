@@ -20,12 +20,12 @@
 
 local beacon = data.raw.beacon.beacon
 local values = require('__shield-generators__/values')
-local icons = "__shield-generators__/graphics/icons/"
-local tech = "__shield-generators__/graphics/technology/"
-local entity = "__shield-generators__/graphics/entity/"
+local icons = '__shield-generators__/graphics/icons/'
+local tech = '__shield-generators__/graphics/technology/'
+local entity = '__shield-generators__/graphics/entity/'
 local radius_img = {
-	filename = entity .. "beacon/beacon-radius-visualization.png",
-	priority = "extra-high-no-scale",
+	filename = entity .. 'beacon/beacon-radius-visualization.png',
+	priority = 'extra-high-no-scale',
 	width = 512,
 	height = 512
 }
@@ -57,10 +57,9 @@ local basic_shield_provider = {
 	water_reflection = beacon.water_reflection,
 	corpse = beacon.corpse,
 	dying_explosion = beacon.dying_explosion,
-	working_sound =
-	{
-	  sound = { filename = "__shield-generators__/sound/cicada.ogg", volume = 0.9 },
-	  idle_sound  = { filename = "__shield-generators__/sound/cicada.ogg", volume = 0.15 },
+	working_sound = {
+	  sound = { filename = '__shield-generators__/sound/cicada.ogg', volume = 0.9 },
+	  idle_sound  = { filename = '__shield-generators__/sound/cicada.ogg', volume = 0.15 },
 	  max_sounds_per_prototype = 3
 	},
 	max_health = 600,
@@ -79,10 +78,9 @@ local basic_shield_provider = {
 		output_flow_limit = '0W',
 		drain = '0W',
 	},
-	radius_visualisation_specification =
-	{
+	radius_visualisation_specification = {
 		sprite = radius_img,
-	    distance = settings.startup['shield-generators-provider-range-basic'].value,
+		distance = settings.startup['shield-generators-provider-range-basic'].value,
 	},
 	continuous_animation = true,
 	animation = {
@@ -113,7 +111,7 @@ local basic_shield_provider = {
 				frame_count = 25,
 				animation_speed = 0.5,
 				draw_as_glow = true,
-				blend_mode = "additive",
+				blend_mode = 'additive',
 			},
 		},
 	},
@@ -129,8 +127,7 @@ advanced_shield_provider.selection_box = {{-2, -2}, {2, 2}}
 
 advanced_shield_provider.max_health = 1000
 advanced_shield_provider.minable.result = 'shield-generators-generator-advanced'
-advanced_shield_provider.animation.layers[1] = 
-{
+advanced_shield_provider.animation.layers[1] = {
 	filename = entity .. 'beacon/beacon2.png',
 	width = 341,
 	height = 341,
@@ -139,8 +136,7 @@ advanced_shield_provider.animation.layers[1] =
 	repeat_count = 25,
 }
 advanced_shield_provider.animation.layers[2].scale = 0.66
-advanced_shield_provider.animation.layers[3] = 
-{
+advanced_shield_provider.animation.layers[3] = {
 	filename = entity .. 'beacon/beacon2-light.png',
 	width = 341,
 	height = 341,
@@ -149,12 +145,11 @@ advanced_shield_provider.animation.layers[3] =
 	frame_count = 25,
 	animation_speed = 0.4,
 	draw_as_glow = true,
-	blend_mode = "additive",
+	blend_mode = 'additive',
 }
-advanced_shield_provider.radius_visualisation_specification =
-{
+advanced_shield_provider.radius_visualisation_specification = {
 	sprite = radius_img,
-    distance = settings.startup['shield-generators-provider-range-advanced'].value,
+	distance = settings.startup['shield-generators-provider-range-advanced'].value,
 }
 
 local elite_shield_provider = table.deepcopy(basic_shield_provider)
@@ -167,8 +162,7 @@ elite_shield_provider.selection_box = {{-3, -3}, {3, 3}}
 
 elite_shield_provider.max_health = 1800
 elite_shield_provider.minable.result = 'shield-generators-generator-elite'
-elite_shield_provider.animation.layers[1] =
-{
+elite_shield_provider.animation.layers[1] = {
 	filename = entity .. 'beacon/beacon3.png',
 	width = 512,
 	height = 512,
@@ -177,8 +171,7 @@ elite_shield_provider.animation.layers[1] =
 	repeat_count = 25,
 }
 elite_shield_provider.animation.layers[2].scale = 1
-elite_shield_provider.animation.layers[3] = 
-{
+elite_shield_provider.animation.layers[3] = {
 	filename = entity .. 'beacon/beacon3-light.png',
 	width = 512,
 	height = 512,
@@ -187,12 +180,11 @@ elite_shield_provider.animation.layers[3] =
 	frame_count = 25,
 	animation_speed = 0.3,
 	draw_as_glow = true,
-	blend_mode = "additive",
+	blend_mode = 'additive',
 }
-elite_shield_provider.radius_visualisation_specification =
-{
+elite_shield_provider.radius_visualisation_specification = {
 	sprite = radius_img,
-    distance = settings.startup['shield-generators-provider-range-elite'].value,
+	distance = settings.startup['shield-generators-provider-range-elite'].value,
 }
 
 local ultimate_shield_provider = table.deepcopy(basic_shield_provider)
@@ -205,8 +197,7 @@ ultimate_shield_provider.selection_box = {{-4, -4}, {4, 4}}
 
 ultimate_shield_provider.max_health = 3000
 ultimate_shield_provider.minable.result = 'shield-generators-generator-ultimate'
-ultimate_shield_provider.animation.layers[1] =
-{
+ultimate_shield_provider.animation.layers[1] = {
 	filename = entity .. 'beacon/beacon4.png',
 	width = 682,
 	height = 682,
@@ -215,8 +206,7 @@ ultimate_shield_provider.animation.layers[1] =
 	animation_speed = 0.25,
 }
 ultimate_shield_provider.animation.layers[2].scale = 1.33
-ultimate_shield_provider.animation.layers[3] = 
-{
+ultimate_shield_provider.animation.layers[3] = {
 	filename = entity .. 'beacon/beacon4-light.png',
 	width = 682,
 	height = 682,
@@ -225,12 +215,11 @@ ultimate_shield_provider.animation.layers[3] =
 	frame_count = 25,
 	animation_speed = 0.25,
 	draw_as_glow = true,
-	blend_mode = "additive",
+	blend_mode = 'additive',
 }
-ultimate_shield_provider.radius_visualisation_specification =
-{
+ultimate_shield_provider.radius_visualisation_specification = {
 	sprite = radius_img,
-    distance = settings.startup['shield-generators-provider-range-ultimate'].value,
+	distance = settings.startup['shield-generators-provider-range-ultimate'].value,
 }
 
 local prototypes = {
@@ -266,7 +255,7 @@ local prototypes = {
 		type = 'technology',
 		name = 'shield-generators-turret-shields-basics',
 
-		icon = tech .. "shield-generators-turret-shields-basics.png",
+		icon = tech .. 'shield-generators-turret-shields-basics.png',
 		icon_size = 256,
 
 		effects = {
@@ -676,22 +665,6 @@ do
 			output_flow_limit = '0W',
 			drain = '0W',
 		},
-		--[[animation = {
-			layers = {
-				{
-					filename = entity .. "beacon/shield-picture.png",
-					width = 512,
-					height = 512,
-					scale = 1/4,
-					draw_as_glow = true,
-					shift = util.by_pixel(0,-10),
-					blend_mode = "additive"
-					--tint = {1,1,1,0.1},
-				}
-			},
-		},]]
-
-
 	}
 
 	-- energy interface per turret
