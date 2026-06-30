@@ -114,7 +114,7 @@ script_hook(defines.events.on_runtime_mod_setting_changed, function(event)
 					end
 
 					data.shield.destructible = false
-					data.shield.minable = false
+					data.shield.minable_flag = false
 					data.shield.rotatable = false
 					data.shield.electric_buffer_size = data.shield.electric_buffer_size * util.turret_capacity_modifier(entity.force.technologies)
 					data.max_energy = data.shield.electric_buffer_size - 1
@@ -237,7 +237,7 @@ function create_self_shield(entity, tick)
 	show_self_shield_bars(tracked_data)
 
 	tracked_data.shield.destructible = false
-	tracked_data.shield.minable = false
+	tracked_data.shield.minable_flag = false
 	tracked_data.shield.rotatable = false
 	tracked_data.shield.electric_buffer_size = tracked_data.shield.electric_buffer_size * util.turret_capacity_modifier(entity.force.technologies)
 	tracked_data.max_energy = tracked_data.shield.electric_buffer_size - 1
@@ -289,7 +289,7 @@ function begin_ticking_self_shield(shield)
 		end
 
 		shield.shield.destructible = false
-		shield.shield.minable = false
+		shield.shield.minable_flag = false
 		shield.shield.rotatable = false
 		shield.shield.electric_buffer_size = shield.shield.electric_buffer_size * util.turret_capacity_modifier(entity.force.technologies)
 		shield.max_energy = shield.shield.electric_buffer_size - 1
@@ -341,7 +341,7 @@ function refresh_turret_shields(force)
 			tracked_data.shield = shield
 
 			shield.destructible = false
-			shield.minable = false
+			shield.minable_flag = false
 			shield.rotatable = false
 			shield.electric_buffer_size = shield.electric_buffer_size * modif
 			tracked_data.max_energy = shield.electric_buffer_size - 1
